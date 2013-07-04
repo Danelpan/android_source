@@ -4,11 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.SoftReference;
-import java.lang.ref.WeakReference;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,6 +17,7 @@ import android.os.Message;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.View;
 import android.webkit.URLUtil;
 
@@ -45,9 +42,8 @@ public final class KitBitmapCache {
 	private CacheLoaderListener displayListener;
 	
 	private volatile boolean isPause = false;
-	
-	private final Map<Integer, String> cacheKeysForViews = Collections.synchronizedMap(new HashMap<Integer, String>());
-	
+//	private final Map<Integer, String> cacheKeysForViews = Collections.synchronizedMap(new HashMap<Integer, String>());
+	SparseArray<String> mSparseArray = new SparseArray<String>();
 	public KitBitmapCache(Context context) {
 		this(context, 3);
 	}
@@ -432,7 +428,7 @@ public final class KitBitmapCache {
 	public void destroy(){
 		clearCache();
 		shutdownPools();
-		cacheKeysForViews.clear();
+		mSparseArray.clear();
 	}
 	/**
 	 * 清空缓存内容
@@ -487,6 +483,9 @@ public final class KitBitmapCache {
 				}
 			}
 			CacheConfig cacheConfig = reference.get();
+			if(cacheConfig ==null){
+				return;
+			}
 			Bitmap bitmap = null;
 			String key = CacheUtils.createKey(cacheConfig.getUrl());
 			File file = new File(baseConfig.getCachePath(), 
@@ -599,36 +598,36 @@ public final class KitBitmapCache {
 	}
 
 	
-	String getLoadingUriForView(View view) {
+	private synchronized String getLoadingUriForView(View view) {
 		if(view == null){
 			return "";
 		}
-		return cacheKeysForViews.get(view.hashCode());
+		return mSparseArray.get(view.hashCode());
 	}
 
-	void prepareDisplayTaskFor(View view, String memoryCacheKey) {
+	private synchronized void prepareDisplayTaskFor(View view, String memoryCacheKey) {
 		if(view == null){
 			return ;
 		}
-		cacheKeysForViews.put(view.hashCode(), memoryCacheKey);
+		mSparseArray.put(view.hashCode(), memoryCacheKey);
 	}
 
-	void cancelDisplayTaskFor(View view) {
+	private synchronized void cancelDisplayTaskFor(View view) {
 		if(view == null){
 			return ;
 		}
-		cacheKeysForViews.remove(view.hashCode());
+		mSparseArray.remove(view.hashCode());
 	}
 	
 	/**
 	 * 判断是不是已经篡改了标记对应的视图
 	 * @return
 	 */
-	private boolean isRunChaos(View view,String url){
+	private synchronized boolean isRunChaos(View view,String url){
 		if(view == null){
 			return true;
 		}
-		if(cacheKeysForViews.containsKey(view.hashCode())){
+		if(mSparseArray.get(view.hashCode())!=null){
 			return getLoadingUriForView(view).equals(url);
 		}else {
 			return false;

@@ -31,4 +31,44 @@ public final class KitLog {
 			Log.d(tag, logMsg,throwable);
 		}
 	}
+	public static final void i(String tag,String logMsg){
+		if(Constant.DEBUG){
+			Log.i(tag, logMsg);
+		}
+	}
+	public static final void i(String tag,String logMsg,Throwable throwable){
+		if(Constant.DEBUG){
+			Log.i(tag, logMsg,throwable);
+		}
+	}
+	public static final void w(String tag,String logMsg){
+		if(Constant.DEBUG){
+			Log.w(tag, logMsg);
+		}
+	}
+	public static final void w(String tag,String logMsg,Throwable throwable){
+		if(Constant.DEBUG){
+			Log.w(tag, logMsg,throwable);
+		}
+	}
+	public static final void v(String tag,String logMsg){
+		if(Constant.DEBUG){
+			Log.v(tag, logMsg);
+		}
+	}
+	public static final void v(String tag,String logMsg,Throwable throwable){
+		if(Constant.DEBUG){
+			Log.v(tag, logMsg,throwable);
+		}
+	}
+	public static final void out(Object mObject){
+		if(Constant.DEBUG){
+			System.out.println(mObject);
+		}
+	}
+	public static final void err(Object mObject){
+		if(Constant.DEBUG){
+			System.err.println(mObject);
+		}
+	}
 }
