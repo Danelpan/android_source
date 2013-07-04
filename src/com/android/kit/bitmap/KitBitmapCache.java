@@ -3,6 +3,7 @@ package com.android.kit.bitmap;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,7 +36,7 @@ import com.android.kit.net.NetworkAgent;
  */
 public final class KitBitmapCache {
 	private final Object object = new Object();
-	private WeakReference<Context> wrContext = null;
+	private SoftReference<Context> wrContext = null;
 	private ExecutorService mServiceFile = null;
 	private ExecutorService mServiceNetWork = null;
 	private final CacheConfig baseConfig = new CacheConfig();
@@ -48,7 +49,7 @@ public final class KitBitmapCache {
 	private final Map<Integer, String> cacheKeysForViews = Collections.synchronizedMap(new HashMap<Integer, String>());
 	
 	public KitBitmapCache(Context context) {
-		this(context, 5);
+		this(context, 3);
 	}
 
 	public KitBitmapCache(Context context, int poolSize) {
@@ -56,9 +57,9 @@ public final class KitBitmapCache {
 	}
 	
 	public KitBitmapCache(Context context, int poolSize,int cacheSize){
-		wrContext = new WeakReference<Context>(context);
-		threadPoolsFile(5);
-		threadPoolsNetWork(4);
+		wrContext = new SoftReference<Context>(context);
+		threadPoolsFile(2*poolSize);
+		threadPoolsNetWork(poolSize);
 		mCache = new LruCache<String, Bitmap>(cacheSize){
 			@Override
 			protected int sizeOf(String key, Bitmap bitmap) {
@@ -307,7 +308,7 @@ public final class KitBitmapCache {
 		final CacheConfig config = copyBaseConfig(baseConfig);
 		config.setUrl(url);
 		FileTask fileTask = new FileTask(config);
-		mServiceFile.submit(fileTask);
+		mServiceFile.execute(fileTask);
 	}
 	
 	/**
@@ -421,6 +422,7 @@ public final class KitBitmapCache {
 		config.setSupportDiskCache(temp.isSupportDiskCache());
 		config.setSupportMemoryCache(temp.isSupportMemoryCache());
 		config.setMapCache(temp.getMapCache());
+		config.setNetMethod(temp.getNetMethod());
 		return config;
 	}
 	
@@ -470,9 +472,9 @@ public final class KitBitmapCache {
 	}
 
 	private final class FileTask implements Runnable{
-		private WeakReference<CacheConfig>reference;
+		private SoftReference<CacheConfig>reference;
 		public FileTask(CacheConfig taskConfig) {
-			this.reference = new WeakReference<CacheConfig>(taskConfig);
+			this.reference = new SoftReference<CacheConfig>(taskConfig);
 		}
 		@Override
 		public void run() {
@@ -531,10 +533,10 @@ public final class KitBitmapCache {
 		}
 	};
 	private final class NetworkTask implements Runnable {
-		private WeakReference<CacheConfig> reference;
+		private CacheConfig cacheConfig;
 		private volatile boolean runChaos = false;
 		public NetworkTask(CacheConfig taskConfig) {
-			this.reference = new WeakReference<CacheConfig>(taskConfig);
+			this.cacheConfig = taskConfig;
 		}
 
 		@Override
@@ -548,14 +550,13 @@ public final class KitBitmapCache {
 					}
 				}
 			}
-			CacheConfig cacheConfig = reference.get();
 			if(null == cacheConfig){
 				return;
 			}
 			if(isRunChaos(cacheConfig.getView(), cacheConfig.getUrl())){
 				Bitmap bitmap = mCache.get(cacheConfig.getUrl());
 				
-				if(bitmap==null){
+				if(null == bitmap){
 					if(displayListener.onCacheLoaderLoading(cacheConfig)){
 						
 					}else{
@@ -566,14 +567,14 @@ public final class KitBitmapCache {
 						} catch (IOException e) {
 							Log.d("NetworkTask", e.getMessage());
 						}
-						String key = CacheUtils.createKey(cacheConfig.getUrl());
-						File file = new File(cacheConfig.getCachePath(), 
-								key+(TextUtils.isEmpty(cacheConfig.getSuffix())?"":cacheConfig.getSuffix()));
-						//防止覆盖图片情况，这种情况解决图片重复覆盖导致失真问题
-						if(file.exists()){
-							file.delete();
-						}
 						if(is != null){
+							String key = CacheUtils.createKey(cacheConfig.getUrl());
+							File file = new File(cacheConfig.getCachePath(), 
+									key+(TextUtils.isEmpty(cacheConfig.getSuffix())?"":cacheConfig.getSuffix()));
+							//防止覆盖图片情况，这种情况解决图片重复覆盖导致失真问题
+							if(file.exists()){
+								file.delete();
+							}
 							CacheUtils.saveBitmapToFile(is, file);
 							bitmap = CacheUtils.getBitmapFromFile(file, cacheConfig);
 						}

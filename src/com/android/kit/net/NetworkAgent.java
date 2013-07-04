@@ -41,7 +41,7 @@ import android.webkit.URLUtil;
 
 import com.android.kit.bitmap.FlushedInputStream;
 import com.android.kit.exception.KitConnNullPointterException;
-import com.android.kit.utils.KitUtils;
+import com.android.kit.utils.KitStreamUtils;
 
 /**
  * Create on 2012-12-1 下午2:13:36 
@@ -171,7 +171,7 @@ public class NetworkAgent {
 	public String getString(String url,Map<String,Object>params,String method) throws IOException{
 		InputStream is = getInputStream(url,params,method);
 		FlushedInputStream in = new FlushedInputStream(new BufferedInputStream(is, 8*1024));
-		return KitUtils.readAsciiLine(in);
+		return KitStreamUtils.readAsciiLine(in);
 	}
 	
 	/**

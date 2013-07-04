@@ -24,15 +24,17 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
-import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.kit.activity.BaseActivity.AsyncTask;
 import com.android.kit.bitmap.KitBitmapCache;
+import com.android.kit.net.NetworkAgent;
 
 /**
  * @author Sergey Tarasevich (nostra13[at]gmail[dot]com)
  */
-public class MainActivity extends BaseActivity {
+public class MainActivity extends BaseActivity implements AsyncTask {
 
 	String[] imageUrls;
 	KitBitmapCache bitmapFactory = null;
@@ -105,6 +107,9 @@ public class MainActivity extends BaseActivity {
 				startImagePagerActivity(position);
 			}
 		});
+//		for(int i=0;i<100;i++){
+//			runAsyncTask(this,i);
+//		}
 //		bitmapFactory = new CMBBitmapCache(this);
 
 	}
@@ -141,7 +146,7 @@ public class MainActivity extends BaseActivity {
 			if (convertView == null) {
 				convertView = (View) getLayoutInflater().inflate(R.layout.item_grid_image,null);
 			} 
-			ImageView imageView = (ImageView) convertView.findViewById(R.id.image);
+			TextView imageView = (TextView) convertView.findViewById(R.id.image);
 			bitmapFactory.display(imageView, imageUrls[position]);
 			return convertView;
 		}
@@ -152,6 +157,29 @@ public class MainActivity extends BaseActivity {
 	protected void onDestroy() {
 		bitmapFactory.destroy();
 		super.onDestroy();
+	}
+
+	@Override
+	public void onTaskStart(int tag) {
+		
+		System.err.println("任务开始执行:"+tag);
+	}
+	
+	@Override
+	public void onTaskLoading(int tag) {
+		System.err.println("任务执行中:"+tag);
+
+		try {
+			String is = NetworkAgent.getInstance().getString("http://99.48.237.101:9080/NeptuneApp/queryMerchants.json?_pro=0&_pla=pluto_andr_3.0.0_uni_demo&_ver=3.0.0&_mt=HTCEUROPE,HTCSAGA,4.0.4&appId=0e2caebb44aa4690a580351c3a3459d3&_appId=0e2caebb44aa4690a580351c3a3459d3&DeviceID=358967040034991&_r=no&_channel=demo&_uid=a1d546cdcbead6cd666d0cdc484c0206&_ss=480x800&sortType=&childTypeId=&districtId=&parentTypeId=&pageIndex=1&regionId=&cityNo=21", null, NetworkAgent.getInstance().POST);
+			System.err.println(is);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	@Override
+	public void onTaskFinish(int tag) {
+		System.err.println("任务执行结束:"+tag);
 	}
 	
 	

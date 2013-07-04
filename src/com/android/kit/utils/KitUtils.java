@@ -15,11 +15,10 @@
  */
 package com.android.kit.utils;
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.io.StringWriter;
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+
 
 
 /**
@@ -28,48 +27,72 @@ import java.io.StringWriter;
  * @author Danel
  * @summary 提供一些公用的方法工具
  */
-public class KitUtils {
+public final class KitUtils {
+	private KitUtils(){}
 	/**
-	 * Returns the remainder of 'reader' as a string, closing it when done.
-	 * @param reader
+	 * 判断设备是否已经连接网络,true为当前设备已经连接了网络，false那么
+	 * <br>设备未连接网络
+	 * @param context
+	 * @return
 	 */
-	public static String readFully(Reader reader) throws IOException {
-		try {
-			StringWriter writer = new StringWriter();
-			char[] buffer = new char[1024];
-			int count;
-			while ((count = reader.read(buffer)) != -1) {
-				writer.write(buffer, 0, count);
-			}
-			return writer.toString();
-		} finally {
-			reader.close();
+	public static final boolean isNetworkOnline(Context context){
+		if(null == context){
+			throw new NullPointerException();
 		}
+		ConnectivityManager connectivity = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);   
+		if (connectivity == null) {
+			return false;
+		} else {
+			NetworkInfo[] info = connectivity.getAllNetworkInfo();
+			if (info != null) {
+				for (int i = 0; i < info.length; i++) {
+					if (info[i].getState() == NetworkInfo.State.CONNECTED) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;   
 	}
 	/**
-	 * Returns the ASCII characters up to but not including the next "\r\n", or
-	 * "\n".
-	 * @param in
-	 * @throws java.io.EOFException if the stream is exhausted before the next newline
-	 *     character.
+	 * 判断设备wifi是否可用，true为wifi可用，false不可用
+	 * @param context
+	 * @return
 	 */
-	public static String readAsciiLine(InputStream in) throws IOException {
-		StringBuilder result = new StringBuilder(80);
-		while (true) {
-			int c = in.read();
-			if (c == -1) {
-				throw new EOFException();
-			} else if (c == '\n') {
-				break;
+	public static final boolean isWifiOnline(Context context){
+		if(null == context){
+			throw new NullPointerException();
+		}
+		ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo info = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+		if(null == info){
+			return false;
+		}else{
+			if(info.isAvailable()){
+				return true;
 			}
-			
-			result.append((char) c);
 		}
-		int length = result.length();
-		if (length > 0 && result.charAt(length - 1) == '\r') {
-			result.setLength(length - 1);
+		return false;
+	}
+	/**
+	 * 判断设备手机网络是否可用，true为网络可用，false为网络不可用
+	 * @param context
+	 * @return
+	 */
+	public static final boolean isMobileNetworkOnline(Context context){
+		if(null == context){
+			throw new NullPointerException();
 		}
-		return result.toString();
+		ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo info = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+		if(null == info){
+			return false;
+		}else{
+			if(info.isAvailable()){
+				return true;
+			}
+		}
+		return false;
 	}
 
 }
