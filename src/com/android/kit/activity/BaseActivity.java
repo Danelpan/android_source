@@ -3,7 +3,7 @@ package com.android.kit.activity;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -12,7 +12,7 @@ import android.os.Bundle;
 import android.util.Log;
 
 public class BaseActivity extends Activity{
-	private LinkedList<Thread> threadQueue;
+	private List<Thread> threadQueue;
 	private ExecutorService threasPools;
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -20,26 +20,28 @@ public class BaseActivity extends Activity{
  	}
 	/**
 	 * 在线程中加载，和处理耗时事物
+	 * @param task 异步工作线程回调
+	 * @param tag 标记线程tag
 	 */
-	public void runAsyncTask(final AsyncTask task){
+	public void runAsyncTask(final AsyncTask task,final int tag){
 		if(null == threadQueue){
-			threadQueue = (LinkedList<Thread>) Collections.synchronizedList(new ArrayList<Thread>());
+			threadQueue = (List<Thread>) Collections.synchronizedList(new ArrayList<Thread>());
 		}
 		if(null == threasPools){
 			threasPools = Executors.newFixedThreadPool(10);
 		}
-		task.onTaskStart();
+		task.onTaskStart(tag);
 		Thread thread = new Thread(new Runnable() {
 			
 			@Override
 			public void run() {
-				task.onTaskLoading();
+				task.onTaskLoading(tag);
 				threadQueue.remove(this);
 				runOnUiThread(new Runnable() {
 					
 					@Override
 					public void run() {
-						task.onTaskFinish();
+						task.onTaskFinish(tag);
 					}
 				});
 			}
@@ -80,14 +82,14 @@ public class BaseActivity extends Activity{
 		/**
 		 * 任务开始的时候，该函数将会被回调，该函数的回调在UI线程中执行
 		 */
-		void onTaskStart();
+		void onTaskStart(int tag);
 		/**
 		 * 任务执行中，该函数将会被回调，该函数回调在线程中执行
 		 */
-		void onTaskLoading();
+		void onTaskLoading(int tag);
 		/**
 		 * 任务结束后，该函数被毁掉，该函数的回调是在UI线程中执行的
 		 */
-		void onTaskFinish();
+		void onTaskFinish(int tag);
 	}
 }
