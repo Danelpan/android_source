@@ -71,21 +71,18 @@ public final class KitBitmapCache {
 	 * @param poolSize
 	 */
 	public void threadPoolsFile(int poolSize){
-		mServiceFile = Executors.newFixedThreadPool(poolSize, new ThreadFactory() {
-			@Override
-			public Thread newThread(Runnable r) {
-				Thread thread = new Thread(r);
-				thread.setPriority(Thread.NORM_PRIORITY);
-				return thread;
-			}
-		});
+		mServiceFile = instancePools(poolSize);
 	}
 	/**
 	 * 实例化文件线程池
 	 * @param poolSize
 	 */
 	public void threadPoolsNetWork(int poolSize){
-		mServiceNetWork = Executors.newFixedThreadPool(poolSize, new ThreadFactory() {
+		mServiceNetWork = instancePools(poolSize);
+	}
+	
+	private ExecutorService instancePools(int poolSize){
+		return Executors.newFixedThreadPool(poolSize, new ThreadFactory() {
 			@Override
 			public Thread newThread(Runnable r) {
 				Thread thread = new Thread(r);

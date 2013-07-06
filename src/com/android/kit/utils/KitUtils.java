@@ -15,6 +15,9 @@
  */
 package com.android.kit.utils;
 
+import java.io.File;
+import java.util.StringTokenizer;
+
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -93,6 +96,26 @@ public final class KitUtils {
 			}
 		}
 		return false;
+	}
+	
+	/**
+	 * 级连创建文件，通过一个分解字符串的形式循环创建目录
+	 * @param path
+	 */
+	public static File createFile(String path) {
+		StringTokenizer st = new StringTokenizer(path, File.separator);
+		String rootPath = st.nextToken() + File.separator;
+		String tempPath = rootPath;
+		File boxFile = null;
+		while (st.hasMoreTokens()) {
+			rootPath = st.nextToken() + File.separator;
+			tempPath += rootPath;
+			boxFile = new File(tempPath);
+			if (!boxFile.exists()) {
+				boxFile.mkdirs();
+			}
+		}
+		return boxFile;
 	}
 
 }

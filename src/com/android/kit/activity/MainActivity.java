@@ -30,6 +30,7 @@ import android.widget.Toast;
 import com.android.kit.activity.BaseActivity.AsyncTask;
 import com.android.kit.bitmap.KitBitmapCache;
 import com.android.kit.net.NetworkAgent;
+import com.android.kit.utils.KitUtils;
 
 /**
  * @author Sergey Tarasevich (nostra13[at]gmail[dot]com)
@@ -43,6 +44,12 @@ public class MainActivity extends BaseActivity implements AsyncTask {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.ac_image_grid);
+		
+		System.err.println("检查手机应用商网络："+KitUtils.isMobileNetworkOnline(this));
+		System.err.println("检查手wifi网络："+KitUtils.isWifiOnline(this));
+		System.err.println("检查手手机网络："+KitUtils.isNetworkOnline(this));
+		
+		
 		imageUrls = new String[]{
 				"http://r01.stu.sogou.com/3293457ccd83b000.jpg",
 				"http://t02.pic.sogou.com/2da0f85d9919fbb3.jpg",
