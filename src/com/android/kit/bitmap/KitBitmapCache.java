@@ -21,6 +21,7 @@ import android.util.SparseArray;
 import android.view.View;
 import android.webkit.URLUtil;
 
+import com.android.kit.net.HttpMethod;
 import com.android.kit.net.NetworkAgent;
 
 /**
@@ -43,9 +44,9 @@ public final class KitBitmapCache {
 	
 	private volatile boolean isPause = false;
 //	private final Map<Integer, String> cacheKeysForViews = Collections.synchronizedMap(new HashMap<Integer, String>());
-	SparseArray<String> mSparseArray = new SparseArray<String>();
+	final SparseArray<String> mSparseArray = new SparseArray<String>();
 	public KitBitmapCache(Context context) {
-		this(context, 3);
+		this(context, 5);
 	}
 
 	public KitBitmapCache(Context context, int poolSize) {
@@ -115,15 +116,18 @@ public final class KitBitmapCache {
 	 * 获得网络请求的方式，分post和get
 	 * @return
 	 */
-	public String getNetMethod(){
+	public HttpMethod getNetMethod(){
 		return baseConfig.getNetMethod();
 	}
 	/**
-	 * 设置网络请求方式
-	 * @param netMethod
+	 * 设置网络请求方式，可以直接从枚举中获取请求方式，也必须从枚举中获取：
+	 * 如：<pre>HttpMethod.POST
+	 *HttpMethod.GET
+	 * </pre>
+	 * @param netMethod 
 	 * @return
 	 */
-	public KitBitmapCache setNetMethod(String netMethod){
+	public KitBitmapCache setNetMethod(HttpMethod netMethod){
 		baseConfig.setNetMethod(netMethod);
 		return this;
 	}
@@ -488,12 +492,10 @@ public final class KitBitmapCache {
 			File file = new File(baseConfig.getCachePath(), 
 					key+(TextUtils.isEmpty(baseConfig.getSuffix())?"":baseConfig.getSuffix()));
 
-			if(null == bitmap){
-				if(file.exists()){
-					bitmap = CacheUtils.getBitmapFromFile(file,baseConfig);
-					if(!baseConfig.isSupportDiskCache() || !CacheUtils.isMounted()){
-						file.delete();
-					}
+			if(file.exists()){
+				bitmap = CacheUtils.getBitmapFromFile(file,baseConfig);
+				if(null==bitmap || !baseConfig.isSupportDiskCache() || !CacheUtils.isMounted()){
+					file.delete();
 				}
 			}
 			
@@ -504,10 +506,16 @@ public final class KitBitmapCache {
 				}
 			}
 		
-			if(null !=bitmap && cacheConfig.isSupportMemoryCache()&& !mCache.snapshot().containsKey(cacheConfig.getUrl())){
+			if(null !=bitmap && !mCache.snapshot().containsKey(cacheConfig.getUrl())){
 				mCache.put(cacheConfig.getMapKey(), bitmap);
 			}
-			cacheConfig.setBitmap(bitmap);
+			if(!isRunChaos(cacheConfig.getView(), cacheConfig.getUrl())){ //如果为true，那么直接不发消息不改变
+				return;
+			}
+			cacheConfig.setBitmap(mCache.get(cacheConfig.getMapKey()));
+			if(mCache.get(cacheConfig.getMapKey())!=null&&!cacheConfig.isSupportMemoryCache()){
+				mCache.remove(cacheConfig.getMapKey());
+			}
 			Message message = new Message();
 			message.obj = cacheConfig;
 			mhander.sendMessage(message);
@@ -530,7 +538,6 @@ public final class KitBitmapCache {
 	};
 	private final class NetworkTask implements Runnable {
 		private CacheConfig cacheConfig;
-		private volatile boolean runChaos = false;
 		public NetworkTask(CacheConfig taskConfig) {
 			this.cacheConfig = taskConfig;
 		}
@@ -565,32 +572,36 @@ public final class KitBitmapCache {
 						}
 						if(is != null){
 							String key = CacheUtils.createKey(cacheConfig.getUrl());
+							CacheUtils.createFile(cacheConfig.getCachePath());
 							File file = new File(cacheConfig.getCachePath(), 
 									key+(TextUtils.isEmpty(cacheConfig.getSuffix())?"":cacheConfig.getSuffix()));
 							//防止覆盖图片情况，这种情况解决图片重复覆盖导致失真问题
 							if(file.exists()){
+							}else{
+								CacheUtils.saveBitmapToFile(is, file);
+							}
+							bitmap = CacheUtils.getBitmapFromFile(file, cacheConfig);
+							if(null == bitmap){
 								file.delete();
 							}
-							CacheUtils.saveBitmapToFile(is, file);
-							bitmap = CacheUtils.getBitmapFromFile(file, cacheConfig);
 						}
 					}
 					
 				}
-				if(null!= bitmap && cacheConfig.isSupportMemoryCache() && !mCache.snapshot().containsKey(cacheConfig.getUrl())){
+				if(null!= bitmap && !mCache.snapshot().containsKey(cacheConfig.getUrl())){
 					mCache.put(cacheConfig.getMapKey(), bitmap);
 				}
-				if(runChaos){ //如果为true，那么直接不发消息不改变
+				if(!isRunChaos(cacheConfig.getView(), cacheConfig.getUrl())){ //如果为true，那么直接不发消息不改变
 					return;
 				}
-				cacheConfig.setBitmap(bitmap);
+				cacheConfig.setBitmap(mCache.get(cacheConfig.getMapKey()));
+				if(mCache.get(cacheConfig.getMapKey())!=null&&!cacheConfig.isSupportMemoryCache()){
+					mCache.remove(cacheConfig.getMapKey());
+				}
 				Message message = new Message();
 				message.obj = cacheConfig;
 				mhander.sendMessage(message);
-			}else{
-				runChaos = true;
 			}
-			
 		}
 	}
 

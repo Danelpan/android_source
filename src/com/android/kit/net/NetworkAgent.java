@@ -21,13 +21,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
-import java.net.ProtocolException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -56,63 +58,56 @@ import com.android.kit.utils.KitStreamUtils;
  */
 public class NetworkAgent {
 	private static final String TAG = "HttpUtils";
-	/**
-	 * @description 客户端连接服务器超时时间
-	 */
-	private int timeout_conn = 30*1000;
-	/**
-	 * @description 客户端读取服务器超时时间
-	 */
-	private int timeout_read = 30*1000;
-	
-	private String charset = "UTF-8";
-	
-	/**
-	 * @description 连接网络请求方式，POST请求
-	 */
-	public final String POST = "POST";
-	/**
-	 * @description 连接网络请求方式GET请求
-	 */
-	public final String GET = "GET";
-	
+
+	private static HttpModel hm = new HttpModel();
 	private static NetworkAgent na = null;
 	
 	public synchronized static  NetworkAgent getInstance(){
 		if(null == na){
 			na = new NetworkAgent();
 		} 
+		hm.requestProperty = requestProperty();
 		return na;
 	}
-	
+	/**
+	 *初始化联网Property的基本配置
+	 */
+	private static Map<String, Object> requestProperty(){
+		Map<String, Object> requestProperty = new HashMap<String, Object>();
+		requestProperty.put("Content-Type", "application/x-www-form-urlencoded");
+		requestProperty.put("Connection", "Keep-Alive");
+		requestProperty.put("Accept", "*/*");
+		requestProperty.put("Accept-Language", "zh-CN");
+		return requestProperty;
+	}
 	
 	/**
 	 * 获得连接编码方式
 	 * @return
 	 */
 	public String getCharset() {
-		return charset;
+		return hm.charset;
 	}
 	/**
 	 * 设置连接编码方式
 	 * @param charset 如果不设置的话默认为UTF-8格式
 	 */
 	public void setCharset(String charset) {
-		this.charset = charset;
+		hm.charset = charset;
 	}
 	/**
 	 * 设置连接服务器超时的时间
 	 * @param timeout 超时的时间，默认为30*1000毫秒
 	 */
 	public void setConnTimeout(int timeout) {
-		this.timeout_conn = timeout;
+		hm.connTimeout = timeout;
 	}
 	/**
 	 * 获得设置的连接服务器是的超时时间
 	 * @return
 	 */
 	public long getConnTimeout() {
-		return timeout_conn;
+		return hm.connTimeout;
 	}
 	
 	/**
@@ -120,14 +115,14 @@ public class NetworkAgent {
 	 * @param timeout 默认为30*1000毫秒
 	 */
 	public void setReadTimeout(int timeout){
-		this.timeout_read = timeout;
+		hm.readTime = timeout;
 	}
 	/**
 	 * 获得客户端读取服务器数据时的超时时间
 	 * @return
 	 */
 	public long getReadTimeout(){
-		return timeout_read;
+		return hm.readTime;
 	}
 	
 	/**
@@ -138,9 +133,9 @@ public class NetworkAgent {
 	 * @param statusListener
 	 * @throws IOException
 	 */
-	public void doConnection(String url,Map<String,Object>params,String method, HttpStatusListener statusListener) throws IOException{
+	public void doConnection(String url,Map<String,Object>params,HttpMethod method, HttpStatusListener statusListener) throws IOException{
 		HttpURLConnection conn = doConnection(url, params, method);
-		if(statusListener.onInstance(conn)){
+		if(statusListener.onInstance(conn,hm)){
 			return;
 		}
 		InputStream is = conn.getInputStream();
@@ -154,7 +149,7 @@ public class NetworkAgent {
 	 * @return
 	 * @throws IOException
 	 */
-	public InputStream getInputStream(String url,Map<String,Object>params,String method) throws IOException{
+	public InputStream getInputStream(String url,Map<String,Object>params,HttpMethod method) throws IOException{
 		HttpURLConnection connection = doConnection(url,params,method);
 		if(connection==null){
 			throw new KitConnNullPointterException();
@@ -168,7 +163,7 @@ public class NetworkAgent {
 	 * @return
 	 * @throws IOException
 	 */
-	public String getString(String url,Map<String,Object>params,String method) throws IOException{
+	public String getString(String url,Map<String,Object>params,HttpMethod method) throws IOException{
 		InputStream is = getInputStream(url,params,method);
 		FlushedInputStream in = new FlushedInputStream(new BufferedInputStream(is, 8*1024));
 		return KitStreamUtils.readAsciiLine(in);
@@ -182,17 +177,20 @@ public class NetworkAgent {
 	 * @return
 	 * @throws IOException
 	 */
-	private HttpURLConnection doConnection(String url,Map<String,Object>params,String method) throws IOException{
+	private HttpURLConnection doConnection(String url,Map<String,Object>params,HttpMethod method) throws IOException{
 		if(URLUtil.isHttpsUrl(url)){
 			HttpsVerify();
 		}
-		HttpURLConnection conn;
-		if("POST".equalsIgnoreCase(method)){
+		HttpURLConnection conn = null;
+		switch (method) {
+		case POST:
 			conn = httpPost(url, params);
-		}else if("GET".equalsIgnoreCase(method)){
+			break;
+		case GET:
 			conn = httpGet(url, params);
-		}else{
-			 throw new ProtocolException("Unknown method '" + method);
+			break;
+		default:
+			break;
 		}
 		return conn;
 	}
@@ -212,13 +210,17 @@ public class NetworkAgent {
 		
 		conn.setUseCaches(false);
 		conn.setInstanceFollowRedirects(true);
-		conn.setConnectTimeout(timeout_conn);
-		conn.setReadTimeout(timeout_read);
-		conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-		conn.setRequestProperty("Connection", "Keep-Alive");
-		conn.setRequestProperty("Accept", "*/*");
-		conn.setRequestProperty("Accept-Language", "zh-CN");
-		conn.setRequestProperty("Charset", charset);
+		conn.setConnectTimeout(hm.connTimeout);
+		conn.setReadTimeout(hm.readTime);
+		if(null != hm.requestProperty && hm.requestProperty.size()>0){
+			Iterator<Entry<String, Object>> it = hm.requestProperty.entrySet().iterator();
+			while(it.hasNext()){
+				String key = it.next().getKey();
+				String value = it.next().getValue().toString();
+				conn.setRequestProperty(key, value);
+			}
+		}
+		conn.setRequestProperty("Charset", hm.charset);
 		return conn;
 	}
 	
@@ -262,7 +264,7 @@ public class NetworkAgent {
 	private StringBuffer paramsToString(Map<String, Object> params) throws UnsupportedEncodingException{
 		StringBuffer sb = new StringBuffer();
 		for (@SuppressWarnings("rawtypes") Map.Entry entry : params.entrySet()) {
-		sb.append((String)entry.getKey()).append("=").append(URLEncoder.encode((String)entry.getValue(), charset));
+		sb.append((String)entry.getKey()).append("=").append(URLEncoder.encode((String)entry.getValue(), hm.charset));
 			sb.append("&");
 		}
 		return sb;

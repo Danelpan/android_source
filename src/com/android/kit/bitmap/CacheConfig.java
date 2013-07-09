@@ -1,5 +1,7 @@
 package com.android.kit.bitmap;
 
+import com.android.kit.net.HttpMethod;
+
 import android.graphics.Bitmap;
 import android.view.View;
 import android.view.animation.Animation;
@@ -19,7 +21,7 @@ public class CacheConfig {
 	/**
 	 * 网络连接方式
 	 */
-	private String netMethod = "post";
+	private HttpMethod netMethod = HttpMethod.POST;
 	
 	/**
 	 * 相应的位图
@@ -195,11 +197,11 @@ public class CacheConfig {
 		this.tag = tag;
 	}
 
-	public String getNetMethod() {
+	public HttpMethod getNetMethod() {
 		return netMethod;
 	}
 
-	public void setNetMethod(String netMethod) {
+	public void setNetMethod(HttpMethod netMethod) {
 		this.netMethod = netMethod;
 	}
 	

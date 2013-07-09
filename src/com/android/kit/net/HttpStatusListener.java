@@ -30,9 +30,10 @@ public interface HttpStatusListener {
 	/**
 	 * 如果该回调返回true的话，那么将不再执行下一步操作
 	 * @param conn
+	 * @param model
 	 * @return
 	 */
-	public boolean onInstance(URLConnection conn);
+	public boolean onInstance(URLConnection conn,HttpModel model);
 	/**
 	 * 接收状态码的方法，该方法出现的情况有两种：1.一种是出现在UI线程中；2.出现在子线程中。
 	 * 使用的时候请注意这两点
