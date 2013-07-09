@@ -124,6 +124,20 @@ public class NetworkAgent {
 	public long getReadTimeout(){
 		return hm.readTime;
 	}
+	/**
+	 * 获取RequestProperty的配置
+	 * @return
+	 */
+	public Map<String, Object> getRequestProperty(){
+		return hm.requestProperty;
+	}
+	/**
+	 * 设置RequestProperty的信息
+	 * @param property
+	 */
+	public void setRequestProperty(Map<String, Object> property){
+		hm.requestProperty = property;
+	}
 	
 	/**
 	 * 通过URL获得一个联网的连接，用{@link HttpStatusListener}操作该连接

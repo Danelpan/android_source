@@ -41,8 +41,7 @@ public class CacheUtils {
 	 * @return
 	 */
 	public static boolean isMounted() {
-		return Environment.MEDIA_MOUNTED.equals(Environment
-				.getExternalStorageState());
+		return Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState());
 	}
 
 	/**
@@ -102,13 +101,19 @@ public class CacheUtils {
 	public static File getExternalCacheDir(Context context) {
 		String cacheDir = "";
 		if (TextUtils.isEmpty(cachePath)) {
-			cacheDir = "/Android/data/" + context.getPackageName()
-					+ "/imgCache/";
+			cacheDir = "/Android/data/" + context.getPackageName()+ "/imgCache/";
 		} else {
 			cacheDir = cachePath;
 		}
-		return createFile(Environment.getExternalStorageDirectory().getPath()
-				+ cacheDir);
+		return createFile(cacheDir.startsWith(getExternalStorageDirectory())?cacheDir:getExternalStorageDirectory()+cacheDir);
+	}
+	
+	/**
+	 * 获取SD的路径
+	 * @return
+	 */
+	public static final String getExternalStorageDirectory(){
+		return Environment.getExternalStorageDirectory().getPath();
 	}
 
 	/**
