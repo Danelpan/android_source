@@ -23,31 +23,33 @@ public class BaseActivity extends Activity{
 	 * @param task 异步工作线程回调
 	 * @param tag 标记线程tag
 	 */
-	public void runAsyncTask(final AsyncTask task,final int tag){
+	public void runAsyncTask(final AsyncTask task,final int... tag){
 		if(null == threadQueue){
 			threadQueue = (List<Thread>) Collections.synchronizedList(new ArrayList<Thread>());
 		}
 		if(null == threasPools){
 			threasPools = Executors.newFixedThreadPool(10);
 		}
-		task.onTaskStart(tag);
-		Thread thread = new Thread(new Runnable() {
-			
-			@Override
-			public void run() {
-				task.onTaskLoading(tag);
-				threadQueue.remove(this);
-				runOnUiThread(new Runnable() {
-					
-					@Override
-					public void run() {
-						task.onTaskFinish(tag);
-					}
-				});
-			}
-		});
-		threadQueue.add(thread);
-		threasPools.submit(thread);
+		for(final int id:tag){
+			task.onTaskStart(id);
+			Thread thread = new Thread(new Runnable() {
+				
+				@Override
+				public void run() {
+					task.onTaskLoading(id);
+					threadQueue.remove(this);
+					runOnUiThread(new Runnable() {
+						
+						@Override
+						public void run() {
+							task.onTaskFinish(id);
+						}
+					});
+				}
+			});
+			threadQueue.add(thread);
+			threasPools.submit(thread);
+		}
 	}
 	/**
 	 * 销毁异步操作的线程，同时关闭线程池
@@ -60,7 +62,7 @@ public class BaseActivity extends Activity{
 				thread.interrupt();
 				Log.d(this.getClass().getSimpleName(), "destroyAsync and interrupt all threads");
 			}
-			if(null != threasPools){
+			if(null != threasPools && !threasPools.isShutdown()){
 				threasPools.shutdown();
 			}
 		}
@@ -69,7 +71,14 @@ public class BaseActivity extends Activity{
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
-		destroyAsync();
+		Thread thread = new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				destroyAsync();
+			}
+		});
+		thread.start();
 	}
 	
 	/**

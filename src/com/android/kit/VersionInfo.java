@@ -23,7 +23,7 @@ package com.android.kit;
  * 信息：版本号，名称，版本描述，功能添加，优化的信息，以及废除的信息情况。 <br>
  * 在每次更新信息和修改jar包的时候，必须更新如下的配置信息。
  */
-public class VersionInfo {
+public final class VersionInfo {
 	private static String version = "1.0";
 	private static String name = "kvm-kit";
 	private static String summary = "";

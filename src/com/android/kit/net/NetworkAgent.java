@@ -56,7 +56,7 @@ import com.android.kit.utils.KitStreamUtils;
  * mNetworkAgent.....;
  * </pre>
  */
-public class NetworkAgent {
+public final class NetworkAgent {
 	private static final String TAG = "HttpUtils";
 
 	private static HttpModel hm = new HttpModel();

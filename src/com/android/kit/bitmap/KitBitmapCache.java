@@ -37,13 +37,13 @@ public final class KitBitmapCache {
 	private SoftReference<Context> wrContext = null;
 	private ExecutorService mServiceFile = null;
 	private ExecutorService mServiceNetWork = null;
+	private ExecutorService director = null;
 	private final CacheConfig baseConfig = new CacheConfig();
 	
 	private LruCache<String, Bitmap> mCache = null;
 	private CacheLoaderListener displayListener;
 	
 	private volatile boolean isPause = false;
-//	private final Map<Integer, String> cacheKeysForViews = Collections.synchronizedMap(new HashMap<Integer, String>());
 	final SparseArray<String> mSparseArray = new SparseArray<String>();
 	public KitBitmapCache(Context context) {
 		this(context, 5);
@@ -65,6 +65,7 @@ public final class KitBitmapCache {
 		};
 		displayListener = new SimpleDisplayer(SimpleDisplayer.NORMAL);
 		buildBaseConfig(context);
+		director = Executors.newCachedThreadPool();
 	}
 		
 	/**
@@ -381,8 +382,8 @@ public final class KitBitmapCache {
 		config.setView(view);
 		_doDisplay(config);
 	}
-	private void _doDisplay(CacheConfig config) {
-		String url = config.getUrl();
+	private void _doDisplay(final CacheConfig config) {
+		final String url = config.getUrl();
 		config.setMapKey(url);
 		displayListener.onCacheLoaderStart(config);
 		if(TextUtils.isEmpty(url)){
@@ -394,16 +395,23 @@ public final class KitBitmapCache {
 			config.setBitmap(mCache.get(url));
 			this.displayListener.onCacheLoaderFinish(config,true);
 		}else{
-			String key = CacheUtils.createKey(url);
-			File file = new File(config.getCachePath(), 
-					key+(TextUtils.isEmpty(config.getSuffix())?"":config.getSuffix()));
-			if(file.exists()){ //判断文件是否存在，存在就去取文件中的图片
-				FileTask fileTask = new FileTask(config);
-				mServiceFile.execute(fileTask);
-			}else{ //那么直接从网络获取图片
-				NetworkTask task = new NetworkTask(config);
-				mServiceNetWork.submit(task);
-			}
+			director.execute(new Runnable() {
+				
+				@Override
+				public void run() {
+					String key = CacheUtils.createKey(url);
+					File file = new File(config.getCachePath(), 
+							key+(TextUtils.isEmpty(config.getSuffix())?"":config.getSuffix()));
+					if(file.exists()){ //判断文件是否存在，存在就去取文件中的图片
+						FileTask fileTask = new FileTask(config);
+						mServiceFile.execute(fileTask);
+					}else{ //那么直接从网络获取图片
+						NetworkTask task = new NetworkTask(config);
+						mServiceNetWork.execute(task);
+					}
+				}
+			});
+			
 		}
 	}
 	

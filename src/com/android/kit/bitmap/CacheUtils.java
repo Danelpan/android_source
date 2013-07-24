@@ -28,7 +28,7 @@ import android.text.TextUtils;
  * @author Danel
  * @summary 图片缓存工具类，该类提供了简单的图片信息配置，和一些文件的基本操作
  */
-public class CacheUtils {
+public final class CacheUtils {
 
 	private static String cachePath = "";
 

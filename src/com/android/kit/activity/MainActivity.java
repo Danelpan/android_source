@@ -195,7 +195,7 @@ public class MainActivity extends BaseActivity implements AsyncTask {
 			bitmapFactory.setCachePath(Environment.getExternalStorageDirectory().getPath()+"/测试环境目录");
 			bitmapFactory.setDefBitmapOfLoading(R.drawable.ic_launcher);
 			bitmapFactory.setDefBitmapOfFailure(R.drawable.ic_error);
-			bitmapFactory.setSupportMemoryCache(false);
+//			bitmapFactory.setSupportMemoryCache(false);
 		}
 		
 		@Override
