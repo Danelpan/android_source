@@ -189,7 +189,7 @@ public final class KitBitmapCache {
 	 * 设置默认图片，当正在加载图片的时候
 	 * @return
 	 */
-	public KitBitmapCache setDefBitmapOfLoading(Bitmap bitmap){
+	public KitBitmapCache setBaseViewBackground(Bitmap bitmap){
 		baseConfig.setLoadingBitmap(bitmap);
 		return this;
 	}
@@ -198,8 +198,8 @@ public final class KitBitmapCache {
 	 * @param res
 	 * @return
 	 */
-	public KitBitmapCache setDefBitmapOfLoading(int res){
-		setDefBitmapOfLoading(
+	public KitBitmapCache setBaseViewBackground(int res){
+		setBaseViewBackground(
 				CacheUtils.decodeSampledBitmapFromResource(getContext().getResources(), 
 				res,
 				baseConfig.getBitmapWidth(), 
@@ -211,8 +211,8 @@ public final class KitBitmapCache {
 	 * @param res
 	 * @return
 	 */
-	public KitBitmapCache setDefBitmapOfFailure(Bitmap bitmap){
-		baseConfig.setLoadfailBitmap(bitmap);
+	public KitBitmapCache setBaseViewErrorBackground(Bitmap bitmap){
+		baseConfig.setErrorBitmap(bitmap);
 		return this;
 	}
 	/**
@@ -220,8 +220,8 @@ public final class KitBitmapCache {
 	 * @param res
 	 * @return
 	 */
-	public KitBitmapCache setDefBitmapOfFailure(int res){
-		setDefBitmapOfFailure(
+	public KitBitmapCache setBaseViewErrorBackground(int res){
+		setBaseViewErrorBackground(
 				CacheUtils.decodeSampledBitmapFromResource(getContext().getResources(),
 				res,
 				baseConfig.getBitmapWidth(),
@@ -421,7 +421,7 @@ public final class KitBitmapCache {
 		config.setBitmapHeight(temp.getBitmapHeight());
 		config.setBitmapWidth(temp.getBitmapWidth());
 		config.setCachePath(temp.getCachePath());
-		config.setLoadfailBitmap(temp.getLoadfailBitmap());
+		config.setErrorBitmap(temp.getErrorBitmap());
 		config.setLoadingBitmap(temp.getLoadingBitmap());
 		config.setSuffix(temp.getSuffix());
 		config.setSupportDiskCache(temp.isSupportDiskCache());
@@ -456,7 +456,7 @@ public final class KitBitmapCache {
 				if(loading != null && !loading.isRecycled()){
 					loading.recycle();
 				}
-				Bitmap failure = baseConfig.getLoadfailBitmap();
+				Bitmap failure = baseConfig.getErrorBitmap();
 				if(failure != null && !failure.isRecycled()){
 					failure.recycle();
 				}
@@ -495,23 +495,9 @@ public final class KitBitmapCache {
 			if(cacheConfig ==null){
 				return;
 			}
-			Bitmap bitmap = null;
-			String key = CacheUtils.createKey(cacheConfig.getUrl());
-			File file = new File(baseConfig.getCachePath(), 
-					key+(TextUtils.isEmpty(baseConfig.getSuffix())?"":baseConfig.getSuffix()));
-
-			if(file.exists()){
-				bitmap = CacheUtils.getBitmapFromFile(file,baseConfig);
-				if(null==bitmap || !baseConfig.isSupportDiskCache() || !CacheUtils.isMounted()){
-					file.delete();
-				}
-			}
-			
-			if(null == bitmap && URLUtil.isFileUrl(cacheConfig.getUrl())){
-				file = new File(cacheConfig.getUrl());
-				if(file.exists()){
-					bitmap = CacheUtils.getBitmapFromFile(file,baseConfig);
-				}
+			Bitmap bitmap = getMMCacheBitmap(cacheConfig);
+			if(bitmap == null){
+				bitmap = getSDCacheBitmap(cacheConfig);
 			}
 		
 			if(null !=bitmap && !mCache.snapshot().containsKey(cacheConfig.getUrl())){
@@ -530,20 +516,7 @@ public final class KitBitmapCache {
 
 		}
 	}
-	private final  Handler mhander = new Handler() {
-		@Override
-		public void handleMessage(Message msg) {
-			super.handleMessage(msg);
-			CacheConfig config = (CacheConfig) msg.obj;
-			if(null == config){
-				return;
-			}
-			if(isRunChaos(config.getView(), config.getUrl())){
-				cancelDisplayTaskFor(config.getView());
-				displayListener.onCacheLoaderFinish(config,config.getBitmap()!=null);
-			}
-		}
-	};
+	
 	private final class NetworkTask implements Runnable {
 		private CacheConfig cacheConfig;
 		public NetworkTask(CacheConfig taskConfig) {
@@ -565,7 +538,11 @@ public final class KitBitmapCache {
 				return;
 			}
 			if(isRunChaos(cacheConfig.getView(), cacheConfig.getUrl())){
-				Bitmap bitmap = mCache.get(cacheConfig.getUrl());
+				Bitmap bitmap = getMMCacheBitmap(cacheConfig);
+
+				if(bitmap == null){
+					bitmap = getSDCacheBitmap(cacheConfig);
+				}
 				
 				if(null == bitmap){
 					if(displayListener.onCacheLoaderLoading(cacheConfig)){
@@ -612,7 +589,46 @@ public final class KitBitmapCache {
 			}
 		}
 	}
-
+	private final  Handler mhander = new Handler() {
+		@Override
+		public void handleMessage(Message msg) {
+			super.handleMessage(msg);
+			CacheConfig config = (CacheConfig) msg.obj;
+			if(null == config){
+				return;
+			}
+			if(isRunChaos(config.getView(), config.getUrl())){
+				cancelDisplayTaskFor(config.getView());
+				displayListener.onCacheLoaderFinish(config,config.getBitmap()!=null);
+			}
+		}
+	};
+	
+	private Bitmap getMMCacheBitmap(CacheConfig mConfig){
+		return mCache.get(mConfig.getMapKey());
+	}
+	
+	private Bitmap getSDCacheBitmap(CacheConfig mConfig){
+		String key = CacheUtils.createKey(mConfig.getUrl());
+		File file = new File(baseConfig.getCachePath(), 
+				key+(TextUtils.isEmpty(baseConfig.getSuffix())?"":baseConfig.getSuffix()));
+		
+		Bitmap bitmap = null;
+		if(file.exists()){
+			bitmap  = CacheUtils.getBitmapFromFile(file,baseConfig);
+			if(null==bitmap || !baseConfig.isSupportDiskCache() || !CacheUtils.isMounted()){
+				file.delete();
+			}
+		}
+		
+		if(null == bitmap && URLUtil.isFileUrl(mConfig.getUrl())){
+			file = new File(mConfig.getUrl());
+			if(file.exists()){
+				bitmap = CacheUtils.getBitmapFromFile(file,baseConfig);
+			}
+		}
+		return bitmap;
+	}
 	
 	private synchronized String getLoadingUriForView(View view) {
 		if(view == null){

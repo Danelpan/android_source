@@ -55,7 +55,7 @@ public class CacheConfig {
 	/**
 	 * 图片加载失败之后设置的默认图片
 	 */
-	private Bitmap loadfailBitmap;
+	private Bitmap errorBitmap;
 	/**
 	 * 图片的硬盘存储路径
 	 */
@@ -181,14 +181,6 @@ public class CacheConfig {
 		this.loadingBitmap = loadingBitmap;
 	}
 
-	public Bitmap getLoadfailBitmap() {
-		return loadfailBitmap;
-	}
-
-	public void setLoadfailBitmap(Bitmap loadfailBitmap) {
-		this.loadfailBitmap = loadfailBitmap;
-	}
-
 	public Object getTag() {
 		return tag;
 	}
@@ -203,6 +195,14 @@ public class CacheConfig {
 
 	public void setNetMethod(HttpMethod netMethod) {
 		this.netMethod = netMethod;
+	}
+
+	public Bitmap getErrorBitmap() {
+		return errorBitmap;
+	}
+
+	public void setErrorBitmap(Bitmap errorBitmap) {
+		this.errorBitmap = errorBitmap;
 	}
 	
 }

@@ -9,9 +9,9 @@ import android.view.View;
  *
  */
 public interface SpecialViewBinderListener {
-
 	/**
-	 * 处理listView里需要特殊处理的视图
+	 * 处理listView里需要特殊处理的视图,建议在处理完一个视图之后返回true，那么之后将不再处理该视图
+	 * <br> 默认返回false
 	 * @param v 需要特殊处理的视图
 	 * @param data 需要特殊处理的视图所对应的数据
 	 * @param parentView 特殊处理视图 所对应的整个条目的视图

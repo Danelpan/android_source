@@ -1,7 +1,5 @@
 package com.android.kit.utils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,9 +24,7 @@ public class KitAdapter extends BaseAdapter {
 	private int mResource;
 	private int mDropDownResource;
 	private LayoutInflater mInflater;
-	private ArrayList<Integer> specialViewIds;
 	private SpecialViewBinderListener binderListener;
-	private int drawableId = 0;
 	private int odd = -1;
 	private int even = -1;
 	private KitBitmapCache bitmapFactory;
@@ -47,25 +43,27 @@ public class KitAdapter extends BaseAdapter {
 	 * @param binderListener
 	 * @param viewID
 	 */
-	public void setSpecialViewBinderListener(SpecialViewBinderListener binderListener,Integer... viewID) {
+	public void setSpecialViewBinderListener(SpecialViewBinderListener binderListener) {
 		this.binderListener = binderListener;
-		this.specialViewIds = new ArrayList<Integer>(Arrays.asList(viewID));
+	}
+	/**
+	 * 设置图片加载失败时候的默认背景	
+	 * @param drawableId
+	 */
+	public void setCurrentViewErrorBackground(int drawableId){
+		bitmapFactory.setBaseViewErrorBackground(drawableId);
 	}
 	
-	/**
-	 * 获取需要处理视图的view的初始化背景图片的id，0，未设置
-	 * @return
-	 */
-	public int getCurrentViewBackground() {
-		return this.drawableId;
+	public void setBitmapCachePath(String path){
+		bitmapFactory.setCachePath(path);
 	}
+	
 	/**
 	 * 设置后台进程加载图片时候view的默认背景图片
 	 * @param drawableId
 	 */
 	public void setCurrentViewBackground(int drawableId) {
-		this.drawableId = drawableId;
-		bitmapFactory.setDefBitmapOfLoading(drawableId);
+		bitmapFactory.setBaseViewBackground(drawableId);
 	}
 	/**
 	 * 设置工作线程的大小
@@ -107,7 +105,10 @@ public class KitAdapter extends BaseAdapter {
 	}
 
 	public View getView(int position, View convertView, ViewGroup parent) {
-		View view = createViewFromResource(position, convertView, parent,this.mResource);
+		View view = null;
+
+		view = createViewFromResource(position, convertView, parent,this.mResource);
+		
 		return view;
 	}
 
@@ -148,6 +149,9 @@ public class KitAdapter extends BaseAdapter {
 		}
 
 		View[] holder = (View[]) view.getTag();
+		if(null == holder){
+			return;
+		}
 		String[] from = this.mFrom;
 		int[] to = this.mTo;
 		int count = to.length;
@@ -156,15 +160,13 @@ public class KitAdapter extends BaseAdapter {
 			View v = holder[i];
 			if (v != null) {
 				Object data = dataSet.get(from[i]);
-				boolean binder = true ;
-				if ((this.binderListener != null)&& (this.specialViewIds.contains(Integer.valueOf(v.getId())))) {
+				boolean binder = false ;
+				if (this.binderListener != null) {
 					binder = this.binderListener.onSpecialViewBinder(v, data, view,dataSet, position);
 				}
-				if(binder){
+				if(!binder){
 					String text = data == null ? "" : data.toString();
-					if (text == null) {
-						text = "";
-					}
+					
 					if ((v instanceof Checkable)) {
 						if ((data instanceof Boolean)){
 							((Checkable) v).setChecked(((Boolean) data).booleanValue());

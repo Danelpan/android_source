@@ -140,7 +140,7 @@ public class SimpleDisplayer implements CacheLoaderListener {
 				}
 			}
 		} else {
-			Bitmap defBitmap = ccf.getLoadfailBitmap();
+			Bitmap defBitmap = ccf.getErrorBitmap();
 			if (null != defBitmap) {
 				if ((view instanceof ImageView)) {
 					((ImageView) view).setImageBitmap(defBitmap);
@@ -171,7 +171,7 @@ public class SimpleDisplayer implements CacheLoaderListener {
 				}
 			}
 		} else {
-			Bitmap defBitmap = ccf.getLoadfailBitmap();
+			Bitmap defBitmap = ccf.getErrorBitmap();
 			if (null != defBitmap) {
 				if ((view instanceof ImageView)) {
 					((ImageView) view).setImageBitmap(defBitmap);
