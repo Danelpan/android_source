@@ -25,12 +25,12 @@ package com.android.kit;
  */
 public final class VersionInfo {
 	private static String version = "1.0";
-	private static String name = "kvm-kit";
-	private static String summary = "";
+	private static String name = "kit-source";
+	private static String summary = "一个轻量级的快速开发包，该版本上线图片缓存，以及简单网络请求";
 	private static String deprecated = "";
-	private static String function = "";
-	private static String optimization = "";
-	private static boolean debug = true;
+	private static String function = "图片缓存";
+	private static String optimization = "图片缓存";
+	private static boolean debug = false;
 	/**
 	 * 获取Jar包的版本号
 	 * @return
