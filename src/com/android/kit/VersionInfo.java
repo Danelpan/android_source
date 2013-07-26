@@ -30,6 +30,7 @@ public final class VersionInfo {
 	private static String deprecated = "";
 	private static String function = "";
 	private static String optimization = "";
+	private static boolean debug = true;
 	/**
 	 * 获取Jar包的版本号
 	 * @return
@@ -71,5 +72,12 @@ public final class VersionInfo {
 	 */
 	public static String getOptimization(){
 		return VersionInfo.optimization;
+	}
+	/**
+	 * 获取SDK是否是打印日志的
+	 * @return
+	 */
+	public static boolean isDebug() {
+		return debug;
 	}
 }
