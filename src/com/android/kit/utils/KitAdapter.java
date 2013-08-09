@@ -70,8 +70,8 @@ public class KitAdapter extends BaseAdapter {
 	 * @param size
 	 */
 	public void setThreadSize(int size) {
-		bitmapFactory.threadPoolsFile(size);
-		bitmapFactory.threadPoolsNetWork(size);
+		bitmapFactory.poolsFile(size);
+		bitmapFactory.poolsNetwork(size);
 	}
 	
 	/**

@@ -58,6 +58,17 @@ public final class KitUtils {
 		return false;   
 	}
 	/**
+	 * 获取网络信息
+	 * @param context
+	 * @return
+	 */
+	public static final NetworkInfo getNetworkInfo(Context context){
+		ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+		return activeNetworkInfo;
+	}
+	
+	/**
 	 * 判断设备wifi是否可用，true为wifi可用，false不可用
 	 * @param context
 	 * @return

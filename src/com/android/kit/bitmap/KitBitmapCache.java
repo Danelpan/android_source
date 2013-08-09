@@ -16,13 +16,15 @@ import android.os.Handler;
 import android.os.Message;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.util.SparseArray;
 import android.view.View;
 import android.webkit.URLUtil;
 
+import com.android.kit.exception.NoNetworkException;
 import com.android.kit.net.HttpMethod;
 import com.android.kit.net.NetworkAgent;
+import com.android.kit.utils.KitLog;
+import com.android.kit.utils.KitUtils;
 
 /**
  * 缓存处理公共入口，该入口可以配置缓存的一些基础信息，同时触发使用缓存，通过配置可以
@@ -55,8 +57,8 @@ public final class KitBitmapCache {
 	
 	public KitBitmapCache(Context context, int poolSize,int cacheSize){
 		wrContext = new SoftReference<Context>(context);
-		threadPoolsFile(2*poolSize);
-		threadPoolsNetWork(poolSize);
+		poolsFile(2*poolSize);
+		poolsNetwork(poolSize);
 		mCache = new LruCache<String, Bitmap>(cacheSize){
 			@Override
 			protected int sizeOf(String key, Bitmap bitmap) {
@@ -64,7 +66,7 @@ public final class KitBitmapCache {
 			}
 		};
 		displayListener = new SimpleDisplayer(SimpleDisplayer.NORMAL);
-		buildBaseConfig(context);
+		initBaseConfig(context);
 		director = Executors.newCachedThreadPool();
 	}
 		
@@ -72,18 +74,18 @@ public final class KitBitmapCache {
 	 * 实例化文件线程池
 	 * @param poolSize
 	 */
-	public void threadPoolsFile(int poolSize){
-		mServiceFile = instancePools(poolSize);
+	public void poolsFile(int poolSize){
+		mServiceFile = initPools(poolSize);
 	}
 	/**
 	 * 实例化文件线程池
 	 * @param poolSize
 	 */
-	public void threadPoolsNetWork(int poolSize){
-		mServiceNetWork = instancePools(poolSize);
+	public void poolsNetwork(int poolSize){
+		mServiceNetWork = initPools(poolSize);
 	}
 	
-	private ExecutorService instancePools(int poolSize){
+	private ExecutorService initPools(int poolSize){
 		return Executors.newFixedThreadPool(poolSize, new ThreadFactory() {
 			@Override
 			public Thread newThread(Runnable r) {
@@ -97,7 +99,7 @@ public final class KitBitmapCache {
 	 * 初始化一些常用
 	 * @param context
 	 */
-	private void buildBaseConfig(Context context){
+	private void initBaseConfig(Context context){
 		baseConfig.setSuffix(".pic");
 		baseConfig.setCachePath(CacheUtils.getExternalCacheDir(context).getAbsolutePath());
 		DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
@@ -299,7 +301,7 @@ public final class KitBitmapCache {
 	 * @param loaderListener
 	 */
 	public void getResultFromCache(final String url,final CacheLoaderListener loaderListener){
-		if(null == url || !URLUtil.isNetworkUrl(url)){
+		if(null == url ){
 			return;
 		}
 		this.displayListener = loaderListener;
@@ -319,6 +321,10 @@ public final class KitBitmapCache {
 		}
 		if(!mServiceNetWork.isShutdown()){
 			mServiceNetWork.shutdown();
+		}
+		
+		if(!director.isShutdown()){
+			director.shutdown();
 		}
 	}
 
@@ -551,9 +557,14 @@ public final class KitBitmapCache {
 						InputStream is = null;
 						NetworkAgent na = NetworkAgent.getInstance();
 						try {
+							if(null != getContext()){
+								na.setNetworkInfo(KitUtils.getNetworkInfo(getContext()));
+							}
 							is = na.getInputStream(cacheConfig.getUrl(),null, cacheConfig.getNetMethod());
 						} catch (IOException e) {
-							Log.d("NetworkTask", e.getMessage());
+							KitLog.d("NetworkTask", e.getMessage());
+						} catch (NoNetworkException e) {
+							KitLog.d("NetworkTask", "no network");
 						}
 						if(is != null){
 							String key = CacheUtils.createKey(cacheConfig.getUrl());

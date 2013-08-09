@@ -31,6 +31,7 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -56,6 +57,8 @@ public class MainActivity extends BaseActivity implements AsyncTask, SpecialView
 		System.err.println("检查手机应用商网络："+KitUtils.isMobileNetworkOnline(this));
 		System.err.println("检查手wifi网络："+KitUtils.isWifiOnline(this));
 		System.err.println("检查手手机网络："+KitUtils.isNetworkOnline(this));
+		
+		String jsonStr = "{\"name\":\"中国\",\"province\":[{\"name\":\"黑龙江\",\"cities\":{\"city\":[\"哈尔滨\",\"大庆\"]}},{\"name\":\"广东\",\"cities\":{\"city\":[\"广州\",\"深圳\",\"珠海\"]}},{\"name\":\"台湾\",\"cities\":{\"city\":[\"台北\",\"高雄\"]}},{\"name\":\"新疆\",\"cities\":{\"city\":[\"乌鲁木齐\"]}}]}";
 		
 		
 		imageUrls = new String[]{
@@ -115,14 +118,16 @@ public class MainActivity extends BaseActivity implements AsyncTask, SpecialView
 
 
 		listView = (GridView) findViewById(R.id.gridview);
-//		((GridView) listView).setAdapter(new ImageAdapter(this));
+		((GridView) listView).setAdapter(new ImageAdapter(this));
 		listView.setOnItemClickListener(new OnItemClickListener() {
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 				startImagePagerActivity(position);
 			}
 		});
-		data = new ArrayList<HashMap<String,Object>>();
+//		data = new ArrayList<HashMap<String,Object>>();
+//		HashMap<String, Object> map = KitJSONUtils.json2Map(jsonStr);
+//		System.err.println(map.size());
 		Thread thread = new Thread(new Runnable() {
 			
 			@Override
@@ -136,7 +141,7 @@ public class MainActivity extends BaseActivity implements AsyncTask, SpecialView
 				handler.sendEmptyMessage(0);
 			}
 		});
-		thread.start();
+//		thread.start();
 	}
 	List<HashMap<String, Object>> data = null;
 	GridView listView;
@@ -203,7 +208,7 @@ public class MainActivity extends BaseActivity implements AsyncTask, SpecialView
 			if (convertView == null) {
 				convertView = (View) getLayoutInflater().inflate(R.layout.item_grid_image,null);
 			} 
-			TextView imageView = (TextView) convertView.findViewById(R.id.image);
+			ImageView imageView = (ImageView) convertView.findViewById(R.id.image);
 			bitmapFactory.display(imageView, imageUrls[position]);
 			return convertView;
 		}
@@ -223,12 +228,13 @@ public class MainActivity extends BaseActivity implements AsyncTask, SpecialView
 	}
 	
 	@Override
-	public void onTaskLoading(int tag) {
+	public Object onTaskLoading(int tag) {
 		System.err.println("任务执行中:"+tag);
+		return null;
 	}
 	
 	@Override
-	public void onTaskFinish(int tag) {
+	public void onTaskFinish(int tag,Object result) {
 		System.err.println("任务执行结束:"+tag);
 	}
 

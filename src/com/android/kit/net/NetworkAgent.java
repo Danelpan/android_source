@@ -21,6 +21,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.security.GeneralSecurityException;
@@ -37,12 +40,16 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.X509TrustManager;
 
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.text.TextUtils;
 import android.util.Log;
 import android.webkit.URLUtil;
 
 import com.android.kit.bitmap.FlushedInputStream;
 import com.android.kit.exception.KitConnNullPointterException;
+import com.android.kit.exception.NoNetworkException;
+import com.android.kit.utils.KitLog;
 import com.android.kit.utils.KitStreamUtils;
 
 /**
@@ -61,6 +68,8 @@ public final class NetworkAgent {
 
 	private static HttpModel hm = new HttpModel();
 	private static NetworkAgent na = null;
+	
+	private NetworkInfo mNetworkInfo;
 	
 	public synchronized static  NetworkAgent getInstance(){
 		if(null == na){
@@ -138,6 +147,13 @@ public final class NetworkAgent {
 	public void setRequestProperty(Map<String, Object> property){
 		hm.requestProperty = property;
 	}
+	/**
+	 * 设置网络信息，通过该信息，我们可以判断网络的连接情况
+	 * @param mNetworkInfo
+	 */
+	public void setNetworkInfo(NetworkInfo mNetworkInfo){
+		this.mNetworkInfo = mNetworkInfo;
+	}
 	
 	/**
 	 * 通过URL获得一个联网的连接，用{@link HttpStatusListener}操作该连接
@@ -146,12 +162,11 @@ public final class NetworkAgent {
 	 * @param method
 	 * @param statusListener
 	 * @throws IOException
+	 * @throws NoNetworkException 
 	 */
-	public void doConnection(String url,Map<String,Object>params,HttpMethod method, HttpStatusListener statusListener) throws IOException{
+	public void doConnection(String url,Map<String,Object>params,HttpMethod method, HttpStatusListener statusListener) throws IOException, NoNetworkException{
 		HttpURLConnection conn = doConnection(url, params, method);
-		if(statusListener.onInstance(conn,hm)){
-			return;
-		}
+		conn = (HttpURLConnection) statusListener.onInstance(conn,hm);
 		InputStream is = conn.getInputStream();
 		int responseCode = conn.getResponseCode();
 		statusListener.onResponse(responseCode,is);
@@ -162,8 +177,9 @@ public final class NetworkAgent {
 	 * @param connection
 	 * @return
 	 * @throws IOException
+	 * @throws NoNetworkException 
 	 */
-	public InputStream getInputStream(String url,Map<String,Object>params,HttpMethod method) throws IOException{
+	public InputStream getInputStream(String url,Map<String,Object>params,HttpMethod method) throws IOException, NoNetworkException{
 		HttpURLConnection connection = doConnection(url,params,method);
 		if(connection==null){
 			throw new KitConnNullPointterException();
@@ -176,8 +192,9 @@ public final class NetworkAgent {
 	 * @param connection
 	 * @return
 	 * @throws IOException
+	 * @throws NoNetworkException 
 	 */
-	public String getString(String url,Map<String,Object>params,HttpMethod method) throws IOException{
+	public String getString(String url,Map<String,Object>params,HttpMethod method) throws IOException, NoNetworkException{
 		InputStream is = getInputStream(url,params,method);
 		FlushedInputStream in = new FlushedInputStream(new BufferedInputStream(is, 8*1024));
 		return KitStreamUtils.readAsciiLine(in);
@@ -190,21 +207,26 @@ public final class NetworkAgent {
 	 * @param method
 	 * @return
 	 * @throws IOException
+	 * @throws NoNetworkException 
 	 */
-	private HttpURLConnection doConnection(String url,Map<String,Object>params,HttpMethod method) throws IOException{
-		if(URLUtil.isHttpsUrl(url)){
-			HttpsVerify();
-		}
+	private HttpURLConnection doConnection(String url,Map<String,Object>params,HttpMethod method) throws IOException, NoNetworkException{
 		HttpURLConnection conn = null;
 		switch (method) {
 		case POST:
 			conn = httpPost(url, params);
+			conn.setDoOutput(true);
 			break;
 		case GET:
 			conn = httpGet(url, params);
 			break;
 		default:
 			break;
+		}
+		if(conn instanceof HttpsURLConnection){
+			KitLog.d("HttpsURLConnection", "have download Htts url.");
+			if(URLUtil.isHttpsUrl(url)){
+				HttpsVerify();
+			}
 		}
 		return conn;
 	}
@@ -214,16 +236,61 @@ public final class NetworkAgent {
 	 * @param path
 	 * @return
 	 * @throws IOException
+	 * @throws NoNetworkException 
 	 */
-	private HttpURLConnection httpInstance(String path) throws IOException{
-		URL url =new URL(path);
-		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
-		conn.setDoOutput(true);
-		conn.setDoInput(true);
-		
-		conn.setUseCaches(false);
-		conn.setInstanceFollowRedirects(true);
+	private HttpURLConnection httpInstance(String path) throws IOException, NoNetworkException{
+		HttpURLConnection conn = null;
+		if(null == mNetworkInfo){ //无网络
+			throw new NoNetworkException();
+		}else{
+			if(!mNetworkInfo.isAvailable()){
+				throw new NoNetworkException();
+			}else{
+				String netType = mNetworkInfo.getExtraInfo();
+				int type = mNetworkInfo.getType();
+				if (type == ConnectivityManager.TYPE_MOBILE) {
+					String proxy = null;
+					if (netType.contains("wap")) {
+						if (netType.contains("uniwap")) {
+							proxy = "http://10.0.0.172:80";
+						} else if (netType.contains("ctwap")) {
+							proxy = "http://10.0.0.200:80";
+						} else {
+							proxy = "http://10.0.0.172:80";
+						}
+					}
+					conn = httpInstance(path, proxy);
+					String s = conn.getHeaderField("Content-Type");
+					if (s != null && s.startsWith("text/vnd.wap")) {
+						conn = httpInstance(path,proxy);
+					}
+				} else {
+					conn = httpInstance(path, null);
+				}
+			}
+		}
+		return conn;
+	}
+	private static HttpURLConnection httpInstance(String path, String proxy) throws SocketTimeoutException,IOException{
+		HttpURLConnection conn = null;
+		URL url = null;
+		if(proxy == null){
+			url = new URL(path);
+			conn = (HttpURLConnection) url.openConnection();
+		}else{
+			if(URLUtil.isHttpsUrl(path)){
+				url = new URL(path);
+				Proxy p = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxy.substring(7,proxy.length()-3), 80));
+				conn = (HttpURLConnection) url.openConnection(p);
+			}else{
+				String proxyPath = proxy + path.substring(path.indexOf('/', 11));
+				url = new URL(proxyPath);
+				conn = (HttpURLConnection) url.openConnection();
+				conn.setRequestProperty("X-Online-Host", path.substring(7, path.indexOf("/", 11)));
+			}
+		}
+		conn.setUseCaches(hm.useNetCaches);
+		conn.setInstanceFollowRedirects(hm.followRedirects);
 		conn.setConnectTimeout(hm.connTimeout);
 		conn.setReadTimeout(hm.readTime);
 		if(null != hm.requestProperty && hm.requestProperty.size()>0){
@@ -235,6 +302,7 @@ public final class NetworkAgent {
 			}
 		}
 		conn.setRequestProperty("Charset", hm.charset);
+		conn.setDoInput(true);	
 		return conn;
 	}
 	
@@ -244,15 +312,15 @@ public final class NetworkAgent {
 	 * @param params
 	 * @return
 	 * @throws IOException
+	 * @throws NoNetworkException 
 	 */
-	private HttpURLConnection httpPost(String url, Map<String, Object> params) throws IOException{
-		Log.d(TAG, "URL-->"+url);
+	private HttpURLConnection httpPost(String url, Map<String, Object> params) throws IOException, NoNetworkException{
 		String data = paramsStr(params);
 		
 		HttpURLConnection conn = httpInstance(url);
 		conn.setRequestMethod("POST");
 		if(!TextUtils.isEmpty(data)){
-			Log.d(TAG, "URL ALL-->"+url+"?"+data);
+			KitLog.d(TAG, "URL ALL-->"+url+"?"+data);
 			DataOutputStream dos = new DataOutputStream(conn.getOutputStream());
 			dos.writeBytes(data);
 			dos.flush();
@@ -261,10 +329,14 @@ public final class NetworkAgent {
 		return conn;
 	}
 	
-	private HttpURLConnection httpGet(String url, Map<String, Object> params) throws IOException{
+	private HttpURLConnection httpGet(String url, Map<String, Object> params) throws IOException, NoNetworkException{
 		String data = paramsStr(params);
-		url = url+"?"+data;
-		Log.d(TAG, "URL-->"+url);
+		if(url.contains("?")&&"?".equals(url.substring(url.length()-1, url.length()))){
+			url = url+data;
+		}else{
+			url = url+"?"+data;
+		}
+		KitLog.d(TAG, "URL-->"+url);
 		HttpURLConnection conn = httpInstance(url);
 		conn.setRequestMethod("GET");
 		return conn;
@@ -307,7 +379,7 @@ public final class NetworkAgent {
 		if(checkParams(params)){
 			StringBuffer sb = paramsToString(params);
 			data += TextUtils.isEmpty(data)?"":"&"+sb.deleteCharAt(sb.length() - 1).toString();
-			Log.d(TAG, "PARMAS-->"+sb.deleteCharAt(sb.length() - 1).toString());
+			KitLog.d(TAG, "PARMAS-->"+sb.deleteCharAt(sb.length() - 1).toString());
 		}
 		return data;
 	}

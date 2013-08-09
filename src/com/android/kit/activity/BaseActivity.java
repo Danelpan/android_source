@@ -23,33 +23,31 @@ public class BaseActivity extends Activity{
 	 * @param task 异步工作线程回调
 	 * @param tag 标记线程tag
 	 */
-	public void runAsyncTask(final AsyncTask task,final int... tag){
+	public void runAsyncTask(final AsyncTask task,final int tag){
 		if(null == threadQueue){
 			threadQueue = (List<Thread>) Collections.synchronizedList(new ArrayList<Thread>());
 		}
 		if(null == threasPools){
 			threasPools = Executors.newFixedThreadPool(10);
 		}
-		for(final int id:tag){
-			task.onTaskStart(id);
-			Thread thread = new Thread(new Runnable() {
-				
-				@Override
-				public void run() {
-					task.onTaskLoading(id);
-					threadQueue.remove(this);
-					runOnUiThread(new Runnable() {
-						
-						@Override
-						public void run() {
-							task.onTaskFinish(id);
-						}
-					});
-				}
-			});
-			threadQueue.add(thread);
-			threasPools.submit(thread);
-		}
+		task.onTaskStart(tag);
+		Thread thread = new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				final Object result = task.onTaskLoading(tag);
+				threadQueue.remove(this);
+				runOnUiThread(new Runnable() {
+					
+					@Override
+					public void run() {
+						task.onTaskFinish(tag,result);
+					}
+				});
+			}
+		});
+		threadQueue.add(thread);
+		threasPools.submit(thread);
 	}
 	/**
 	 * 销毁异步操作的线程，同时关闭线程池
@@ -95,10 +93,11 @@ public class BaseActivity extends Activity{
 		/**
 		 * 任务执行中，该函数将会被回调，该函数回调在线程中执行
 		 */
-		void onTaskLoading(int tag);
+		Object onTaskLoading(int tag);
 		/**
-		 * 任务结束后，该函数被毁掉，该函数的回调是在UI线程中执行的
+		 * 任务结束后，该函数被毁掉，该函数的回调是在UI线程中执行的,具体的返回值result是
+		 * <br>onTaskLoading的结果集
 		 */
-		void onTaskFinish(int tag);
+		void onTaskFinish(int tag,Object result);
 	}
 }
