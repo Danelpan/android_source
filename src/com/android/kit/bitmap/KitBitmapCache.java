@@ -562,9 +562,9 @@ public final class KitBitmapCache {
 							}
 							is = na.getInputStream(cacheConfig.getUrl(),null, cacheConfig.getNetMethod());
 						} catch (IOException e) {
-							KitLog.d("NetworkTask", e.getMessage());
+							KitLog.printStackTrace(e);
 						} catch (NoNetworkException e) {
-							KitLog.d("NetworkTask", "no network");
+							KitLog.printStackTrace(e);
 						}
 						if(is != null){
 							String key = CacheUtils.createKey(cacheConfig.getUrl());

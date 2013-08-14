@@ -128,5 +128,45 @@ public final class KitUtils {
 		}
 		return boxFile;
 	}
+	
+	/**
+	 * 根据给定的类型名和字段名，返回R文件中的字段的值
+	 * @param typeName 属于哪个类别的属性 （id,layout,drawable,string,color,attr......）
+	 * @param fieldName 字段名
+	 * @return 字段的值
+	 * @throws Exception 
+	 */
+	public static int getFieldValue(Context context,String typeName,String fieldName){
+			int i = -1;
+			try {
+				Class<?> clazz = Class.forName(context.getPackageName()+".R$"+typeName);
+				i = clazz.getField(fieldName).getInt(null);
+			} catch (Exception e) {
+			}
+			return i;
+	}
+	public static int getId(Context context,String fieldName){
+		return getFieldValue(context,"id", fieldName);
+	}
+	public static int getLayout(Context context,String fieldName){
+		return getFieldValue(context,"layout", fieldName);
+	}
+	public static int getDrawable(Context context,String fieldName){
+		return getFieldValue(context,"drawable", fieldName);
+	}
+	
+	/**
+	 * 判断是否支持google地图包
+	 * 
+	 * @return
+	 */
+	public static boolean hasGoogleMap() {
+		try {
+			Class.forName("com.google.android.maps.MapActivity");
+		} catch (Exception e) {
+			return false;
+		}
+		return true;
+	}
 
 }

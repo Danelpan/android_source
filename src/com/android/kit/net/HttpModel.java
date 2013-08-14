@@ -7,6 +7,7 @@ import java.util.Map;
  *
  */
 public final class HttpModel {
+	
 	/**连接网络超时*/
 	public int connTimeout = 30*1000;
 	

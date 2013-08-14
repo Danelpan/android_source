@@ -378,7 +378,7 @@ public final class NetworkAgent {
 		String data = "";
 		if(checkParams(params)){
 			StringBuffer sb = paramsToString(params);
-			data += TextUtils.isEmpty(data)?"":"&"+sb.deleteCharAt(sb.length() - 1).toString();
+			data += TextUtils.isEmpty(sb.toString())?"":"&"+sb.deleteCharAt(sb.length() - 1).toString();
 			KitLog.d(TAG, "PARMAS-->"+sb.deleteCharAt(sb.length() - 1).toString());
 		}
 		return data;

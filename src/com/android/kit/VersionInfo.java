@@ -24,13 +24,13 @@ package com.android.kit;
  * 在每次更新信息和修改jar包的时候，必须更新如下的配置信息。
  */
 public final class VersionInfo {
-	private static String version = "1.0";
+	private static String version = "1.1";
 	private static String name = "kit-source";
-	private static String summary = "一个轻量级的快速开发包，该版本上线图片缓存，以及简单网络请求";
+	private static String summary = "更新网络请求，添加网络请求代理模式，优化网络";
 	private static String deprecated = "";
-	private static String function = "图片缓存";
-	private static String optimization = "图片缓存";
-	private static boolean debug = false;
+	private static String function = "网络请求";
+	private static String optimization = "网络请求";
+	private static boolean debug = true;
 	/**
 	 * 获取Jar包的版本号
 	 * @return

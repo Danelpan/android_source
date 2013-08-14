@@ -15,7 +15,7 @@
  *******************************************************************************/
 package com.android.kit.activity;
 
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,11 +32,12 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.android.kit.activity.BaseActivity.AsyncTask;
 import com.android.kit.bitmap.KitBitmapCache;
+import com.android.kit.exception.NoNetworkException;
+import com.android.kit.net.HttpMethod;
+import com.android.kit.net.NetworkAgent;
 import com.android.kit.utils.KitAdapter;
 import com.android.kit.utils.KitUtils;
 import com.android.kit.utils.SpecialViewBinderListener;
@@ -118,13 +119,14 @@ public class MainActivity extends BaseActivity implements AsyncTask, SpecialView
 
 
 		listView = (GridView) findViewById(R.id.gridview);
-		((GridView) listView).setAdapter(new ImageAdapter(this));
+//		((GridView) listView).setAdapter(new ImageAdapter(this));
 		listView.setOnItemClickListener(new OnItemClickListener() {
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 				startImagePagerActivity(position);
 			}
 		});
+		runAsyncTask(this, 0x11);
 //		data = new ArrayList<HashMap<String,Object>>();
 //		HashMap<String, Object> map = KitJSONUtils.json2Map(jsonStr);
 //		System.err.println(map.size());
@@ -230,6 +232,21 @@ public class MainActivity extends BaseActivity implements AsyncTask, SpecialView
 	@Override
 	public Object onTaskLoading(int tag) {
 		System.err.println("任务执行中:"+tag);
+		NetworkAgent agent = NetworkAgent.getInstance();
+		HashMap<String , Object> params = new HashMap<String, Object>();
+		params.put("device", "ASUI131U129UNSAND");
+		params.put("order", "");
+		try {
+			agent.setNetworkInfo(KitUtils.getNetworkInfo(this));
+			String result = agent.getString("http://sanya.babybang.com/open/article/list/", params, HttpMethod.GET);
+			System.out.println(result);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NoNetworkException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return null;
 	}
 	

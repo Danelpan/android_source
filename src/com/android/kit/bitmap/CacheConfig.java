@@ -21,7 +21,7 @@ public class CacheConfig {
 	/**
 	 * 网络连接方式
 	 */
-	private HttpMethod netMethod = HttpMethod.POST;
+	private HttpMethod netMethod = HttpMethod.GET;
 	
 	/**
 	 * 相应的位图
