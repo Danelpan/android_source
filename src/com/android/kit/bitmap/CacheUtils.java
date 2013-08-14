@@ -235,7 +235,31 @@ public final class CacheUtils {
 		}
 		return bitmap;
 	}
-
+	/**
+	 * 保存图片到硬盘缓存
+	 */
+	public static synchronized void saveBitmapToFile(byte[] buffer,File file){
+		BufferedOutputStream out = null;
+		FileOutputStream outputStream = null;
+		try {
+			outputStream = new FileOutputStream(file);
+			out = new BufferedOutputStream(outputStream, 8 * 1024);
+			out.write(buffer);
+		} catch (Exception e) {
+			if (file != null && file.exists()) {
+				file.delete();
+			}
+			file = null;
+		} finally {
+			try {
+				if (out != null) {
+					out.close();
+				}
+			} catch (final IOException e) {
+			}
+		}
+	}
+	
 	/**
 	 * 保存图片到硬盘缓存
 	 */

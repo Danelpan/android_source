@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,7 +16,8 @@ import android.widget.ImageView;
 import android.widget.RatingBar;
 import android.widget.TextView;
 
-import com.android.kit.bitmap.KitBitmapCache;
+import com.android.kit.bitmap.core.DisplayImageOptions;
+import com.android.kit.bitmap.core.ImageLoader;
 
 public class KitAdapter extends BaseAdapter {
 	private int[] mTo;
@@ -27,17 +29,23 @@ public class KitAdapter extends BaseAdapter {
 	private SpecialViewBinderListener binderListener;
 	private int odd = -1;
 	private int even = -1;
-	private KitBitmapCache bitmapFactory;
-
+	
+	private ImageLoader loader;
+	DisplayImageOptions options;
+	
 	public KitAdapter(Context context,List<? extends Map<String, Object>> data, int defResource,String[] from, int[] to) {
-		bitmapFactory = new KitBitmapCache(context);
-		bitmapFactory.setSuffix(".pic");
+		loader = ImageLoader.getInstance();
 		this.mData = data;
 		this.mResource = (this.mDropDownResource = defResource);
 		this.mFrom = from;
 		this.mTo = to;
 		this.mInflater = ((LayoutInflater) context.getSystemService("layout_inflater"));
 	}
+	
+	public ImageLoader getImageLoader(){
+		return loader;
+	}
+	
 	/**
 	 * 设置特殊处理的View
 	 * @param binderListener
@@ -50,46 +58,19 @@ public class KitAdapter extends BaseAdapter {
 	 * 设置图片加载失败时候的默认背景	
 	 * @param drawableId
 	 */
-	public void setCurrentViewErrorBackground(int drawableId){
-		bitmapFactory.setBaseViewErrorBackground(drawableId);
+	public void setCurrentViewBackground(int loadingBg,int failLoadbg){
+		options = new DisplayImageOptions.Builder()
+		.cacheInMemory()
+		.showStubImage(loadingBg)
+		.showImageOnFail(failLoadbg)
+		.cacheOnDisc().bitmapConfig(Bitmap.Config.ARGB_8888).build();
 	}
 	
-	public void setBitmapCachePath(String path){
-		bitmapFactory.setCachePath(path);
-	}
-	
-	/**
-	 * 设置后台进程加载图片时候view的默认背景图片
-	 * @param drawableId
-	 */
-	public void setCurrentViewBackground(int drawableId) {
-		bitmapFactory.setBaseViewBackground(drawableId);
-	}
-	/**
-	 * 设置工作线程的大小
-	 * @param size
-	 */
-	public void setThreadSize(int size) {
-		bitmapFactory.poolsFile(size);
-		bitmapFactory.poolsNetwork(size);
-	}
-	
-	/**
-	 * 设置工作线程是否挂起，true为挂起，false唤起
-	 * @param pause
-	 */
-	public void setThreadPause(boolean pause) {
-		if (pause) {
-			bitmapFactory.pause();
-		} else {
-			bitmapFactory.resume();
-		}
-	}
 	/**
 	 * 销毁当前adapter,中缓存的占用
 	 */
 	public void destroy() {
-		bitmapFactory.destroy();
+		loader.destroy();
 	}
 	
 	/**
@@ -184,7 +165,7 @@ public class KitAdapter extends BaseAdapter {
 							setViewImage((ImageView) v,((Integer) data).intValue());
 						} else {
 							ImageView iv = (ImageView) v;
-							bitmapFactory.display(iv, text);
+							loader.displayImage(text, iv,options);
 						}
 					} else if ((v instanceof RatingBar)){
 						try {

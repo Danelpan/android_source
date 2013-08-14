@@ -1,8 +1,8 @@
 package com.android.kit.utils;
 
-import com.android.kit.VersionInfo;
-
 import android.util.Log;
+
+import com.android.kit.VersionInfo;
 
 /**
  * LOG统一输出工具类,该类会根据版本信息中debug的设置而定是否要打印日志的

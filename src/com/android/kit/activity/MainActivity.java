@@ -16,11 +16,13 @@
 package com.android.kit.activity;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -35,6 +37,8 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.android.kit.bitmap.KitBitmapCache;
+import com.android.kit.bitmap.core.DisplayImageOptions;
+import com.android.kit.bitmap.core.ImageLoader;
 import com.android.kit.exception.NoNetworkException;
 import com.android.kit.net.HttpMethod;
 import com.android.kit.net.NetworkAgent;
@@ -45,7 +49,8 @@ import com.android.kit.utils.SpecialViewBinderListener;
 /**
  * @author Sergey Tarasevich (nostra13[at]gmail[dot]com)
  */
-public class MainActivity extends BaseActivity implements AsyncTask, SpecialViewBinderListener {
+public class MainActivity extends BaseActivity implements AsyncTask,
+		SpecialViewBinderListener {
 
 	String[] imageUrls;
 	KitBitmapCache bitmapFactory = null;
@@ -54,15 +59,14 @@ public class MainActivity extends BaseActivity implements AsyncTask, SpecialView
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.ac_image_grid);
-		
-		System.err.println("检查手机应用商网络："+KitUtils.isMobileNetworkOnline(this));
-		System.err.println("检查手wifi网络："+KitUtils.isWifiOnline(this));
-		System.err.println("检查手手机网络："+KitUtils.isNetworkOnline(this));
-		
+
+		System.err.println("检查手机应用商网络：" + KitUtils.isMobileNetworkOnline(this));
+		System.err.println("检查手wifi网络：" + KitUtils.isWifiOnline(this));
+		System.err.println("检查手手机网络：" + KitUtils.isNetworkOnline(this));
+
 		String jsonStr = "{\"name\":\"中国\",\"province\":[{\"name\":\"黑龙江\",\"cities\":{\"city\":[\"哈尔滨\",\"大庆\"]}},{\"name\":\"广东\",\"cities\":{\"city\":[\"广州\",\"深圳\",\"珠海\"]}},{\"name\":\"台湾\",\"cities\":{\"city\":[\"台北\",\"高雄\"]}},{\"name\":\"新疆\",\"cities\":{\"city\":[\"乌鲁木齐\"]}}]}";
-		
-		
-		imageUrls = new String[]{
+		runAsyncTask(this, 0);
+		imageUrls = new String[] {
 				"http://r01.stu.sogou.com/3293457ccd83b000.jpg",
 				"http://t02.pic.sogou.com/2da0f85d9919fbb3.jpg",
 				"http://t02.pic.sogou.com/f57aea542a6a3170.jpg",
@@ -114,82 +118,88 @@ public class MainActivity extends BaseActivity implements AsyncTask, SpecialView
 				"http://t04.pic.sogou.com/aee02df8d968b13e.jpg",
 				"http://t02.pic.sogou.com/83a01e99e398c0b5.jpg",
 				"http://t01.pic.sogou.com/cef8b5c6ae6584b5.jpg",
-				"http://t01.pic.sogou.com/3f11d5446080ebf8.jpg"
-    			};
-
+				"http://t01.pic.sogou.com/3f11d5446080ebf8.jpg" };
 
 		listView = (GridView) findViewById(R.id.gridview);
 //		((GridView) listView).setAdapter(new ImageAdapter(this));
 		listView.setOnItemClickListener(new OnItemClickListener() {
 			@Override
-			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+			public void onItemClick(AdapterView<?> parent, View view,
+					int position, long id) {
 				startImagePagerActivity(position);
 			}
 		});
-		runAsyncTask(this, 0x11);
-//		data = new ArrayList<HashMap<String,Object>>();
-//		HashMap<String, Object> map = KitJSONUtils.json2Map(jsonStr);
-//		System.err.println(map.size());
+		data = new ArrayList<HashMap<String,Object>>();
 		Thread thread = new Thread(new Runnable() {
-			
+
 			@Override
 			public void run() {
-				
+
 				for (int i = 0; i < imageUrls.length; i++) {
-					HashMap<String,Object> map = new HashMap<String, Object>();
+					HashMap<String, Object> map = new HashMap<String, Object>();
 					map.put("url", imageUrls[i]);
 					data.add(map);
 				}
 				handler.sendEmptyMessage(0);
 			}
 		});
-//		thread.start();
+		 thread.start();
 	}
+
 	List<HashMap<String, Object>> data = null;
 	GridView listView;
-	Handler handler = new Handler(){
+	Handler handler = new Handler() {
 
 		@Override
 		public void handleMessage(Message msg) {
 			super.handleMessage(msg);
-			final KitAdapter adapter = new KitAdapter(MainActivity.this, data, R.layout.item_grid_image, new String[]{"url"},new int[]{R.id.image});
-			adapter.setCurrentViewBackground(R.drawable.ic_launcher);
-			adapter.setCurrentViewErrorBackground(R.drawable.ic_error);
-//			adapter.setThreadPause(true);
-			adapter.setBitmapCachePath(Environment.getExternalStorageDirectory().getPath()+"/测试环境目录");
+			final KitAdapter adapter = new KitAdapter(MainActivity.this, data,
+					R.layout.item_grid_image, new String[] { "url" },
+					new int[] { R.id.image });
+			adapter.setCurrentViewBackground(R.drawable.ic_launcher,0);
+			// adapter.setThreadPause(true);
 			adapter.setSpecialViewBinderListener(MainActivity.this);
 			listView.setAdapter(adapter);
-//			Thread thread = new Thread(new Runnable() {
-//				
-//				@Override
-//				public void run() {
-//					try {
-//						Thread.sleep(20*1000);
-//						adapter.setThreadPause(false);
-//					} catch (InterruptedException e) {
-//					
-//					}
-//					
-//				}
-//			});
-//			thread.start();
+			// Thread thread = new Thread(new Runnable() {
+			//
+			// @Override
+			// public void run() {
+			// try {
+			// Thread.sleep(20*1000);
+			// adapter.setThreadPause(false);
+			// } catch (InterruptedException e) {
+			//
+			// }
+			//
+			// }
+			// });
+			// thread.start();
 		}
-		
+
 	};
 
 	private void startImagePagerActivity(int position) {
-		Toast.makeText(this, ""+position, Toast.LENGTH_SHORT).show();
+		Toast.makeText(this, "" + position, Toast.LENGTH_SHORT).show();
 	}
 
 	public class ImageAdapter extends BaseAdapter {
-		public ImageAdapter(Context context){
+		ImageLoader loader;
+		DisplayImageOptions options;
+
+		public ImageAdapter(Context context) {
+			loader = ImageLoader.getInstance();
+			options = new DisplayImageOptions.Builder()
+					.showStubImage(R.drawable.ic_launcher)
+					.showImageOnFail(R.drawable.ic_error).cacheInMemory()
+					.cacheOnDisc().bitmapConfig(Bitmap.Config.ARGB_8888).build();
 			bitmapFactory = new KitBitmapCache(context);
-			bitmapFactory.setCachePath(Environment.getExternalStorageDirectory().getPath()+"/测试环境目录");
+			bitmapFactory.setCachePath(Environment
+					.getExternalStorageDirectory().getPath() + "/测试环境目录");
 			bitmapFactory.setBaseViewBackground(R.drawable.ic_launcher);
 			bitmapFactory.setBaseViewErrorBackground(R.drawable.ic_error);
-//			bitmapFactory.setSupportMemoryCache(false);
+			// bitmapFactory.setSupportMemoryCache(false);
 		}
-		
+
 		@Override
 		public int getCount() {
 			return imageUrls.length;
@@ -208,10 +218,13 @@ public class MainActivity extends BaseActivity implements AsyncTask, SpecialView
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
 			if (convertView == null) {
-				convertView = (View) getLayoutInflater().inflate(R.layout.item_grid_image,null);
-			} 
-			ImageView imageView = (ImageView) convertView.findViewById(R.id.image);
-			bitmapFactory.display(imageView, imageUrls[position]);
+				convertView = (View) getLayoutInflater().inflate(
+						R.layout.item_grid_image, null);
+			}
+			ImageView imageView = (ImageView) convertView
+					.findViewById(R.id.image);
+			loader.displayImage(imageUrls[position], imageView,options);
+			// bitmapFactory.display(imageView, imageUrls[position]);
 			return convertView;
 		}
 
@@ -219,48 +232,32 @@ public class MainActivity extends BaseActivity implements AsyncTask, SpecialView
 
 	@Override
 	protected void onDestroy() {
-//		bitmapFactory.destroy();
+		// bitmapFactory.destroy();
 		super.onDestroy();
 	}
 
 	@Override
 	public void onTaskStart(int tag) {
-		
-		System.err.println("任务开始执行:"+tag);
+
+		System.err.println("任务开始执行:" + tag);
 	}
-	
+
 	@Override
 	public Object onTaskLoading(int tag) {
-		System.err.println("任务执行中:"+tag);
-		NetworkAgent agent = NetworkAgent.getInstance();
-		HashMap<String , Object> params = new HashMap<String, Object>();
-		params.put("device", "ASUI131U129UNSAND");
-		params.put("order", "");
-		try {
-			agent.setNetworkInfo(KitUtils.getNetworkInfo(this));
-			String result = agent.getString("http://sanya.babybang.com/open/article/list/", params, HttpMethod.GET);
-			System.out.println(result);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NoNetworkException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		System.err.println("任务执行中:" + tag);
 		return null;
 	}
-	
+
 	@Override
-	public void onTaskFinish(int tag,Object result) {
-		System.err.println("任务执行结束:"+tag);
+	public void onTaskFinish(int tag, Object result) {
+		System.err.println("任务执行结束:" + tag);
 	}
 
 	@Override
 	public boolean onSpecialViewBinder(View v, Object data, View parentView,
 			Map<String, ?> dataSet, int position) {
-		
+
 		return false;
 	}
 
-	
 }
