@@ -70,11 +70,11 @@ import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.SyncBasicHttpContext;
 
-import com.android.kit.bitmap.FlushedInputStream;
+import android.content.Context;
+
+import com.android.kit.bitmap.core.assist.FlushedInputStream;
 import com.android.kit.utils.KitLog;
 import com.android.kit.utils.KitStreamUtils;
-
-import android.content.Context;
 
 
 /**

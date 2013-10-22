@@ -18,63 +18,63 @@ public final class KitLog {
 		}
 	}
 	public static void e(String tag,String logMsg,Throwable throwable){
-		if(VersionInfo.isDebug()){
+		if(VersionInfo.isDebug() && throwable!=null){
 			Log.e(tag, logMsg,throwable);
 		}
 	}
 	public static void d(String tag,String logMsg){
-		if(VersionInfo.isDebug()){
+		if(VersionInfo.isDebug() && logMsg!=null){
 			Log.d(tag, logMsg);
 		}
 	}
 	public static void d(String tag,String logMsg,Throwable throwable){
-		if(VersionInfo.isDebug()){
+		if(VersionInfo.isDebug() && throwable!=null){
 			Log.d(tag, logMsg,throwable);
 		}
 	}
 	public static void i(String tag,String logMsg){
-		if(VersionInfo.isDebug()){
+		if(VersionInfo.isDebug() && logMsg!=null){
 			Log.i(tag, logMsg);
 		}
 	}
 	public static void i(String tag,String logMsg,Throwable throwable){
-		if(VersionInfo.isDebug()){
+		if(VersionInfo.isDebug() && throwable!=null){
 			Log.i(tag, logMsg,throwable);
 		}
 	}
 	public static void w(String tag,String logMsg){
-		if(VersionInfo.isDebug()){
+		if(VersionInfo.isDebug() && logMsg!=null){
 			Log.w(tag, logMsg);
 		}
 	}
 	public static void w(String tag,String logMsg,Throwable throwable){
-		if(VersionInfo.isDebug()){
+		if(VersionInfo.isDebug() && throwable!=null){
 			Log.w(tag, logMsg,throwable);
 		}
 	}
 	public static void v(String tag,String logMsg){
-		if(VersionInfo.isDebug()){
+		if(VersionInfo.isDebug() && logMsg!=null){
 			Log.v(tag, logMsg);
 		}
 	}
 	public static void v(String tag,String logMsg,Throwable throwable){
-		if(VersionInfo.isDebug()){
+		if(VersionInfo.isDebug() && throwable!=null){
 			Log.v(tag, logMsg,throwable);
 		}
 	}
 	public static void out(Object mObject){
-		if(VersionInfo.isDebug()){
+		if(VersionInfo.isDebug() && mObject!=null){
 			System.out.println(mObject);
 		}
 	}
 	public static void err(Object mObject){
-		if(VersionInfo.isDebug()){
+		if(VersionInfo.isDebug() && mObject!=null){
 			System.err.println(mObject);
 		}
 	}
 	
 	public static void printStackTrace(Throwable throwable){
-		if(VersionInfo.isDebug()){
+		if(VersionInfo.isDebug() && throwable!=null){
 			throwable.printStackTrace();
 		}
 	}

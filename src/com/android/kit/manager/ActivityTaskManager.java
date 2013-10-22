@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.kit.utils;
+package com.android.kit.manager;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;

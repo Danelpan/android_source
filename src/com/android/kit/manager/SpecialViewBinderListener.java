@@ -1,4 +1,4 @@
-package com.android.kit.utils;
+package com.android.kit.manager;
 
 import java.util.Map;
 

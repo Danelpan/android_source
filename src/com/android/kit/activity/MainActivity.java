@@ -15,7 +15,6 @@
  *******************************************************************************/
 package com.android.kit.activity;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,7 +23,6 @@ import java.util.Map;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.view.View;
@@ -36,15 +34,11 @@ import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.android.kit.bitmap.KitBitmapCache;
 import com.android.kit.bitmap.core.DisplayImageOptions;
 import com.android.kit.bitmap.core.ImageLoader;
-import com.android.kit.exception.NoNetworkException;
-import com.android.kit.net.HttpMethod;
-import com.android.kit.net.NetworkAgent;
-import com.android.kit.utils.KitAdapter;
+import com.android.kit.manager.KitAdapter;
+import com.android.kit.manager.SpecialViewBinderListener;
 import com.android.kit.utils.KitUtils;
-import com.android.kit.utils.SpecialViewBinderListener;
 
 /**
  * @author Sergey Tarasevich (nostra13[at]gmail[dot]com)
@@ -53,7 +47,6 @@ public class MainActivity extends BaseActivity implements AsyncTask,
 		SpecialViewBinderListener {
 
 	String[] imageUrls;
-	KitBitmapCache bitmapFactory = null;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -192,11 +185,6 @@ public class MainActivity extends BaseActivity implements AsyncTask,
 					.showStubImage(R.drawable.ic_launcher)
 					.showImageOnFail(R.drawable.ic_error).cacheInMemory()
 					.cacheOnDisc().bitmapConfig(Bitmap.Config.ARGB_8888).build();
-			bitmapFactory = new KitBitmapCache(context);
-			bitmapFactory.setCachePath(Environment
-					.getExternalStorageDirectory().getPath() + "/测试环境目录");
-			bitmapFactory.setBaseViewBackground(R.drawable.ic_launcher);
-			bitmapFactory.setBaseViewErrorBackground(R.drawable.ic_error);
 			// bitmapFactory.setSupportMemoryCache(false);
 		}
 

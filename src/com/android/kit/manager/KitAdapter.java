@@ -1,4 +1,4 @@
-package com.android.kit.utils;
+package com.android.kit.manager;
 
 import java.util.HashMap;
 import java.util.List;
@@ -18,6 +18,7 @@ import android.widget.TextView;
 
 import com.android.kit.bitmap.core.DisplayImageOptions;
 import com.android.kit.bitmap.core.ImageLoader;
+import com.android.kit.utils.KitLog;
 
 public class KitAdapter extends BaseAdapter {
 	private int[] mTo;
