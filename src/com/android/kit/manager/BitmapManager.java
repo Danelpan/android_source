@@ -1,5 +1,7 @@
 package com.android.kit.manager;
 
+import java.io.File;
+
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
@@ -9,6 +11,10 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.view.View;
+
+import com.android.kit.bitmap.core.DisplayImageOptions;
+import com.android.kit.bitmap.core.ImageLoader;
+import com.android.kit.bitmap.core.assist.ImageLoadingListener;
 /**
  * 图片管理工具
  * @author Danel
@@ -97,5 +103,25 @@ public final class BitmapManager {
         Bitmap bitmap = view.getDrawingCache();
         Bitmap temp = Bitmap.createBitmap(bitmap, 0,90, bitmap.getWidth(), bitmap.getHeight()*68/100);
         return temp;
+    }
+    /**
+     * 文件装换成位图
+     * @param file
+     * @return
+     */
+    public static final void file2Bitmap(File file,ImageLoadingListener listener){
+    	if(null == file){
+    		throw new NullPointerException("source file is null ...");
+    	}
+    	if(!file.exists()){
+    		return;
+    	}
+    	ImageLoader loader = ImageLoader.getInstance();
+    	DisplayImageOptions options = new DisplayImageOptions.Builder()
+		.cacheInMemory()
+		.cacheOnDisc().
+		bitmapConfig(Bitmap.Config.ARGB_8888)
+		.build();
+		loader.loadImage(file.getPath(), options , listener);
     }
 }

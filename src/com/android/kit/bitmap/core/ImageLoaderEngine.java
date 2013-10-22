@@ -29,6 +29,7 @@ import android.view.View;
 import android.widget.ImageView;
 
 import com.android.kit.bitmap.core.assist.FailReason;
+import com.android.kit.bitmap.core.assist.FlushedInputStream;
 import com.android.kit.bitmap.core.assist.ImageLoadingListener;
 
 /**

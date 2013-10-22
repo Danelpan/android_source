@@ -10,7 +10,6 @@ import java.io.ObjectOutputStream;
 
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
-import android.view.View;
 
 /**
  * 缓存工具类

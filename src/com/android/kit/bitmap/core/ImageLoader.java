@@ -25,6 +25,7 @@ import android.widget.ImageView.ScaleType;
 import com.android.kit.bitmap.cache.disc.DiscCacheAware;
 import com.android.kit.bitmap.cache.memory.MemoryCacheAware;
 import com.android.kit.bitmap.core.assist.FailReason;
+import com.android.kit.bitmap.core.assist.FlushedInputStream;
 import com.android.kit.bitmap.core.assist.ImageLoadingListener;
 import com.android.kit.bitmap.core.assist.ImageSize;
 import com.android.kit.bitmap.core.assist.MemoryCacheUtil;
