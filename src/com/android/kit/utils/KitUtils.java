@@ -168,5 +168,18 @@ public final class KitUtils {
 		}
 		return true;
 	}
+	
+    /**
+     * 判断字符串是否全为数字
+     * 
+     * @param phone
+     * @return
+     */
+    public static final boolean isNumeric(String phone) {
+        if (phone.matches("\\d*")) {
+            return true;
+        }
+        return false;
+    }
 
 }

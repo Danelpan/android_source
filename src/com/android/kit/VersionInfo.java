@@ -30,7 +30,7 @@ public final class VersionInfo {
 	private static String deprecated = "";
 	private static String function = "网络请求";
 	private static String optimization = "网络请求";
-	private static boolean debug = true;
+	private static boolean debug = false;
 	/**
 	 * 获取Jar包的版本号
 	 * @return

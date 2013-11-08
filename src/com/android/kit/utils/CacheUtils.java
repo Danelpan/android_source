@@ -1,6 +1,7 @@
 package com.android.kit.utils;
 
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -10,6 +11,7 @@ import java.io.ObjectOutputStream;
 
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
+import android.graphics.BitmapFactory;
 
 /**
  * 缓存工具类
@@ -49,7 +51,7 @@ public final class CacheUtils {
         if (outputStream == null) {
             return;
         }
-        bitmap.compress(CompressFormat.JPEG, 100, outputStream);
+        bitmap.compress(format, quality, outputStream);
         try {
             outputStream.flush();
         } catch (IOException e) {
@@ -129,4 +131,86 @@ public final class CacheUtils {
             } catch (IOException e) {}
         }
     }
+    
+
+	public static Bitmap decodeSampledBitmapFromFile(String filename,
+			int reqWidth, int reqHeight) {
+
+		final BitmapFactory.Options options = new BitmapFactory.Options();
+		options.inJustDecodeBounds = true;
+		BitmapFactory.decodeFile(filename, options);
+
+		// Calculate inSampleSize
+		options.inSampleSize = calculateInSampleSize(options, reqWidth,
+				reqHeight);
+
+		// Decode bitmap with inSampleSize set
+		options.inJustDecodeBounds = false;
+		return BitmapFactory.decodeFile(filename, options);
+	}
+
+	public static Bitmap decodeSampledBitmapFromFile(String filename) {
+		// First decode with inJustDecodeBounds=true to check dimensions
+		final BitmapFactory.Options options = new BitmapFactory.Options();
+		options.inJustDecodeBounds = true;
+		BitmapFactory.decodeFile(filename, options);
+
+		// Decode bitmap with inSampleSize set
+		options.inJustDecodeBounds = false;
+		return BitmapFactory.decodeFile(filename, options);
+	}
+
+	public static Bitmap decodeSampledBitmapFromDescriptor(
+			FileDescriptor fileDescriptor, int reqWidth, int reqHeight) {
+
+		// First decode with inJustDecodeBounds=true to check dimensions
+		final BitmapFactory.Options options = new BitmapFactory.Options();
+		options.inJustDecodeBounds = true;
+		BitmapFactory.decodeFileDescriptor(fileDescriptor, null, options);
+
+		// Calculate inSampleSize
+		options.inSampleSize = calculateInSampleSize(options, reqWidth,
+				reqHeight);
+
+		// Decode bitmap with inSampleSize set
+		options.inJustDecodeBounds = false;
+		return BitmapFactory
+				.decodeFileDescriptor(fileDescriptor, null, options);
+	}
+
+
+	public static int calculateInSampleSize(BitmapFactory.Options options,
+			int reqWidth, int reqHeight) {
+		// Raw height and width of image
+		final int height = options.outHeight;
+		final int width = options.outWidth;
+		int inSampleSize = 1;
+
+		if (height > reqHeight || width > reqWidth) {
+			if (width > height) {
+				inSampleSize = Math.round((float) height / (float) reqHeight);
+			} else {
+				inSampleSize = Math.round((float) width / (float) reqWidth);
+			}
+
+			// This offers some additional logic in case the image has a strange
+			// aspect ratio. For example, a panorama may have a much larger
+			// width than height. In these cases the total pixels might still
+			// end up being too large to fit comfortably in memory, so we should
+			// be more aggressive with sample down the image (=larger
+			// inSampleSize).
+
+			final float totalPixels = width * height;
+
+			// Anything more than 2x the requested pixels we'll sample down
+			// further.
+			final float totalReqPixelsCap = reqWidth * reqHeight * 2;
+
+			while (totalPixels / (inSampleSize * inSampleSize) > totalReqPixelsCap) {
+				inSampleSize++;
+			}
+		}
+		return inSampleSize;
+	}
 }
+

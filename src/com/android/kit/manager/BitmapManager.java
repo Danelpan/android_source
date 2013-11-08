@@ -1,8 +1,12 @@
 package com.android.kit.manager;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.InputStream;
 
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.CompressFormat;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
@@ -123,5 +127,19 @@ public final class BitmapManager {
 		bitmapConfig(Bitmap.Config.ARGB_8888)
 		.build();
 		loader.loadImage(file.getPath(), options , listener);
+    }
+    /**
+     * 位图转换成流
+     * @param bitmap
+     * @return
+     */
+    public static final InputStream bitmap2Stream(Bitmap bitmap) {
+        return bitmap2Stream(bitmap,CompressFormat.JPEG,100);
+    }
+    public static final InputStream bitmap2Stream(Bitmap bitmap,CompressFormat Format,int quality) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Format, quality, baos);
+        InputStream stream = new ByteArrayInputStream(baos.toByteArray());
+        return stream;
     }
 }

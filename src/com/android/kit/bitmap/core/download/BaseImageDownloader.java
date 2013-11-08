@@ -33,6 +33,7 @@ import android.graphics.Bitmap.CompressFormat;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 
+import com.android.kit.bitmap.core.DisplayImageOptions;
 import com.android.kit.http.AsyncHttpClient;
 
 /**
