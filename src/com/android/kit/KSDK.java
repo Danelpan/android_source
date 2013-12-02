@@ -23,7 +23,7 @@ package com.android.kit;
  * 信息：版本号，名称，版本描述，功能添加，优化的信息，以及废除的信息情况。 <br>
  * 在每次更新信息和修改jar包的时候，必须更新如下的配置信息。
  */
-public final class VersionInfo {
+public final class KSDK {
 	private static String version = "1.1";
 	private static String name = "kit-source";
 	private static String summary = "更新网络请求，添加网络请求代理模式，优化网络";
@@ -36,42 +36,42 @@ public final class VersionInfo {
 	 * @return
 	 */
 	public static String getVersion(){
-		return VersionInfo.version;
+		return KSDK.version;
 	}
 	/**
 	 * 获取Jar包的名称
 	 * @return
 	 */
 	public static String getName(){
-		return VersionInfo.name;
+		return KSDK.name;
 	}
 	/**
 	 * 获取Jar包的描述信息
 	 * @return
 	 */
 	public static String getSummary(){
-		return VersionInfo.summary;
+		return KSDK.summary;
 	}
 	/**
 	 * 获取Jar包的过时信息的描述
 	 * @return
 	 */
 	public static String getDeprecated(){
-		return VersionInfo.deprecated;
+		return KSDK.deprecated;
 	}
 	/**
 	 * 获取Jar包的新功能信息的描述
 	 * @return
 	 */
 	public static String getFunction(){
-		return VersionInfo.function;
+		return KSDK.function;
 	}
 	/**
 	 * 获取Jar包的优化API信息的描述
 	 * @return
 	 */
 	public static String getOptimization(){
-		return VersionInfo.optimization;
+		return KSDK.optimization;
 	}
 	/**
 	 * 获取SDK是否是打印日志的

@@ -1,22 +1,20 @@
 package com.android.kit.activity;
 
 import java.lang.ref.WeakReference;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.SparseArray;
 
 import com.android.kit.utils.KitLog;
+import com.android.kit.utils.KitUtils;
 
 public class BaseFragment extends Fragment{
-	private List<Thread> threadQueue;
-	private ExecutorService threasPools;
-	private SparseArray<Thread> sa;
+	private SparseArray<FutureTask<?>> mFutureTasks;
+	private ExecutorService mExecutorService;
+	private SparseArray<WeakReference<AsyncTask>> mSparseArray;
 	public boolean isDestroy = false;
 	
 	@Override
@@ -31,6 +29,7 @@ public class BaseFragment extends Fragment{
 
 	@Override
 	public void onDestroy() {
+		super.onDestroy();
 		isDestroy = true;
 		Thread thread = new Thread(new Runnable() {
 			
@@ -40,7 +39,6 @@ public class BaseFragment extends Fragment{
 			}
 		});
 		thread.start();
-		super.onDestroy();
 	}
 
 	@Override
@@ -61,6 +59,7 @@ public class BaseFragment extends Fragment{
 	@Override
 	public void onResume() {
 		super.onResume();
+		isDestroy = false;
 	}
 
 	@Override
@@ -78,77 +77,97 @@ public class BaseFragment extends Fragment{
 	 * @param task 异步工作线程回调
 	 * @param tag 标记线程tag
 	 */
-	public TaskThread runAsyncTask(final AsyncTask task,final int tag){
+	public AsyncTask runAsyncTask(final TaskListener task,final int tag){
 		if(isDestroy){
+			KitLog.e("BaseActivity", "Activity have Destroy……");
 			return null;
 		}
-		if(null == threadQueue){
-			threadQueue = new LinkedList<Thread>();
+		if(null == mFutureTasks){
+			mFutureTasks = new SparseArray<FutureTask<?>>();
 		}
-		if(null == threasPools){
-			threasPools = Executors.newFixedThreadPool(10);
+		if(null == mExecutorService){
+			mExecutorService = KitUtils.getThreasPools();
 		}
-		if(null == sa){
-			sa = new SparseArray<Thread>();
+		if(null == mSparseArray){
+			mSparseArray = new SparseArray<WeakReference<AsyncTask>>();
 		}
-		if(null != sa.get(tag)){
-			sa.get(tag).interrupt();
-			threadQueue.remove(sa.get(tag));
+		if(null != mSparseArray.get(tag) || null != mFutureTasks.get(tag)){
+			if(null != mSparseArray.get(tag) && null != mSparseArray.get(tag).get()){
+				if(!mSparseArray.get(tag).get().isCancel){
+					mSparseArray.get(tag).get().setCancel(true);
+				}
+				mSparseArray.remove(tag);
+			}
+			if(null != mFutureTasks.get(tag)){
+				mFutureTasks.get(tag).cancel(true);
+				mFutureTasks.remove(tag);
+			}
 		}
 		task.onTaskStart(tag);
-		TaskThread thread = new TaskThread(task, tag);
-		WeakReference<Thread> weakThread = new WeakReference<Thread>(thread); 
-		sa.put(tag, weakThread.get());
-		threadQueue.add(weakThread.get());
-		threasPools.submit(weakThread.get());
-		return (TaskThread) weakThread.get();
+		AsyncTask mAsyncTask = new AsyncTask(task, tag);
+		WeakReference<AsyncTask> weakThread = new WeakReference<AsyncTask>(mAsyncTask); 
+		if(!mExecutorService.isShutdown()){
+			FutureTask<?> futureTask = (FutureTask<?>) mExecutorService.submit(weakThread.get());
+			mFutureTasks.put(tag,futureTask);
+			mSparseArray.put(tag, weakThread);
+		}
+		return weakThread.get();
 	}
 	/**
 	 * 销毁异步操作的线程，同时关闭线程池
 	 */
 	public void destroyAsync(){
-		if(null != sa){
-			sa.clear();
-		}
-		if(null != threadQueue && threadQueue.size()>0){
-			Iterator<Thread> threads = threadQueue.iterator();
-			while(threads.hasNext()){
-				Thread thread = threads.next();
-				thread.interrupt();
-				KitLog.d(this.getClass().getSimpleName(), "destroyAsync and interrupt all threads");
+		if(null != mSparseArray && mSparseArray.size()>0){
+			for (int i = 0; i < mSparseArray.size(); i++) {
+				int mTaskTag = mSparseArray.keyAt(i);
+				AsyncTask mAsyncTask = mSparseArray.get(mTaskTag).get();
+				if(null != mAsyncTask && !mAsyncTask.isCancel){
+					mAsyncTask.setCancel(true);
+				}
 			}
-			if(null != threasPools && !threasPools.isShutdown()){
-				threasPools.shutdown();
+			mSparseArray.clear();
+		}
+		if(null != mFutureTasks && mFutureTasks.size()>0){
+			
+			for (int i = 0; i < mFutureTasks.size(); i++) {
+				int mTaskTag = mFutureTasks.keyAt(i);
+				FutureTask<?> mFutureTask = mFutureTasks.get(mTaskTag);
+				if(null != mFutureTask && !mFutureTask.isCancelled()){
+					mFutureTask.cancel(true);
+				}
+			}
+			mFutureTasks.clear();
+			if(null != mExecutorService && !mExecutorService.isShutdown()){
+				mExecutorService.shutdown();
 			}
 		}
 	}
-	/**
-	 * 工作任务线程，所有的耗时任务都应该放在改线程中执行
-	 * @author Danel
-	 *
-	 */
-	public class TaskThread extends Thread{
-		private AsyncTask task;
+	
+	public class AsyncTask extends Thread{
+		private TaskListener mAsyncTask;
 		private int tag ;
 		private boolean isCancel = false;
-		public TaskThread(AsyncTask task, int tag){
-			this.task = task;
+		public AsyncTask(TaskListener task, int tag){
+			this.mAsyncTask = task;
 			this.tag = tag;
 		}
 		@Override
 		public void run() {
-			final Object result = task.onTaskLoading(tag);
+			final Object result = mAsyncTask.onTaskLoading(tag);
+			if(isDestroy){ //如果当前界面已经销毁，那么取消回调
+				return;
+			}
 			if(!isCancel){
 				getActivity().runOnUiThread(new Runnable() {
 					
 					@Override
 					public void run() {
-						task.onTaskFinish(tag, result);
+						mAsyncTask.onTaskSuccess(tag, result);
 					}
 				});
 			}
-			sa.delete(tag);
-			threadQueue.remove(this);
+			mFutureTasks.delete(tag);
+			mSparseArray.delete(tag);
 		}
 		public boolean isCancel() {
 			return isCancel;
@@ -157,5 +176,4 @@ public class BaseFragment extends Fragment{
 			this.isCancel = isCancel;
 		}
 	}
-	
 }

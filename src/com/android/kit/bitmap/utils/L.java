@@ -17,7 +17,7 @@ package com.android.kit.bitmap.utils;
 
 import android.util.Log;
 
-import com.android.kit.VersionInfo;
+import com.android.kit.KSDK;
 import com.android.kit.bitmap.core.ImageLoader;
 
 /**
@@ -58,7 +58,7 @@ public final class L {
 	}
 
 	private static void log(int priority, Throwable ex, String message, Object... args) {
-		if(!VersionInfo.isDebug()){
+		if(!KSDK.isDebug()){
 			return;
 		}
 		if (args.length > 0) {

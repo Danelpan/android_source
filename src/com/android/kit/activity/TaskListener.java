@@ -6,18 +6,24 @@ package com.android.kit.activity;
  * @author Danel
  *
  */
-public interface AsyncTask{
+public interface TaskListener{
 	/**
 	 * 任务开始的时候，该函数将会被回调，该函数的回调在UI线程中执行
 	 */
-	void onTaskStart(int tag);
+	void onTaskStart(int mTaskTag);
 	/**
 	 * 任务执行中，该函数将会被回调，该函数回调在线程中执行
 	 */
-	Object onTaskLoading(int tag);
+	Object onTaskLoading(int mTaskTag);
 	/**
 	 * 任务结束后，该函数被毁掉，该函数的回调是在UI线程中执行的,具体的返回值result是
 	 * <br>onTaskLoading的结果集
 	 */
-	void onTaskFinish(int tag,Object result);
+	void onTaskSuccess(int mTaskTag,Object result);
+	/**
+	 * 任务结束失败回调的函数
+	 * @param mTaskTag
+	 * @param result
+	 */
+	void onTaskFailure(int mTaskTag,Object result);
 }

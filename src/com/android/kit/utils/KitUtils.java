@@ -16,7 +16,11 @@
 package com.android.kit.utils;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.util.StringTokenizer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.regex.Pattern;
 
 import android.content.Context;
 import android.net.ConnectivityManager;
@@ -31,6 +35,8 @@ import android.net.NetworkInfo;
  * @summary 提供一些公用的方法工具
  */
 public final class KitUtils {
+	private static ExecutorService threasPools;
+	
 	private KitUtils(){}
 	/**
 	 * 判断设备是否已经连接网络,true为当前设备已经连接了网络，false那么
@@ -137,20 +143,39 @@ public final class KitUtils {
 	 * @throws Exception 
 	 */
 	public static int getFieldValue(Context context,String typeName,String fieldName){
-			int i = -1;
-			try {
-				Class<?> clazz = Class.forName(context.getPackageName()+".R$"+typeName);
-				i = clazz.getField(fieldName).getInt(null);
-			} catch (Exception e) {
-			}
-			return i;
+		int i = -1;
+		try {
+			Class<?> clazz = Class.forName(context.getPackageName()+".R$"+typeName);
+			i = clazz.getField(fieldName).getInt(null);
+		} catch (Exception e) {
+		}
+		return i;
 	}
+	/**
+	 * 反射获取view控件的ID
+	 * @param context
+	 * @param fieldName
+	 * @return
+	 */
 	public static int getId(Context context,String fieldName){
 		return getFieldValue(context,"id", fieldName);
 	}
+	/**
+	 * 反射获取xml布局的id
+	 * @param context
+	 * @param fieldName
+	 * @return
+	 */
 	public static int getLayout(Context context,String fieldName){
 		return getFieldValue(context,"layout", fieldName);
 	}
+	
+	/**
+	 * 反射获取图片资源id
+	 * @param context
+	 * @param fieldName
+	 * @return
+	 */
 	public static int getDrawable(Context context,String fieldName){
 		return getFieldValue(context,"drawable", fieldName);
 	}
@@ -169,17 +194,42 @@ public final class KitUtils {
 		return true;
 	}
 	
-    /**
-     * 判断字符串是否全为数字
-     * 
-     * @param phone
-     * @return
-     */
-    public static final boolean isNumeric(String phone) {
-        if (phone.matches("\\d*")) {
-            return true;
-        }
-        return false;
-    }
+	/**
+	 * 判断字符串是否全为数字
+	 * 
+	 * @param phone
+	 * @return
+	 */
+	public static final boolean isNumeric(String phone) {
+		if (phone.matches("\\d*")) {
+			return true;
+		}
+		return false;
+	}
+
+	public static final ExecutorService getThreasPools(){
+		if(threasPools == null){
+			threasPools = Executors.newFixedThreadPool(getCPUCores());
+		}
+		return threasPools;
+	}
+	
+	public static int getCPUCores() {
+		class CpuFilter implements FileFilter {
+			@Override
+			public boolean accept(File pathname) {
+				if (Pattern.matches("cpu[0-9]", pathname.getName())) {
+					return true;
+				}
+				return false;
+			}
+		}
+		try {
+			File dir = new File("/sys/devices/system/cpu/");
+			File[] files = dir.listFiles(new CpuFilter());
+			return files.length;
+		} catch (Exception e) {}
+		return 1;
+	}
 
 }

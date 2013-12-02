@@ -106,6 +106,9 @@ public final class BitmapManager {
         view.buildDrawingCache();
         Bitmap bitmap = view.getDrawingCache();
         Bitmap temp = Bitmap.createBitmap(bitmap, 0,90, bitmap.getWidth(), bitmap.getHeight()*68/100);
+        if(!bitmap.isRecycled()){
+        	bitmap.recycle();
+        }
         return temp;
     }
     /**
@@ -113,6 +116,7 @@ public final class BitmapManager {
      * @param file
      * @return
      */
+    @Deprecated
     public static final void file2Bitmap(File file,ImageLoadingListener listener){
     	if(null == file){
     		throw new NullPointerException("source file is null ...");

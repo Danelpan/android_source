@@ -19,6 +19,9 @@ import android.graphics.BitmapFactory;
  *
  */
 public final class CacheUtils {
+	
+	private CacheUtils(){};
+	
     /**
      * 保存图片到文件,默认{@link CompressFormat}为JPEG，和quality is max
      * @param bitmap
