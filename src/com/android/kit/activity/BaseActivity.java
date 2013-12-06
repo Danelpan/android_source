@@ -66,6 +66,13 @@ public class BaseActivity extends FragmentActivity{
 		});
 		thread.start();
 	}
+	
+	public SparseArray<FutureTask<?>> runAsyncTask(TaskListener task,int ...tags){
+		for(int i=0;i<tags.length;i++){
+			runAsyncTask(task,tags[i]);
+		}
+		return mFutureTasks;
+	}
 
 	/**
 	 * 在线程中加载，和处理耗时事物
@@ -132,10 +139,11 @@ public class BaseActivity extends FragmentActivity{
 				}
 			}
 			mFutureTasks.clear();
-			if(null != mExecutorService && !mExecutorService.isShutdown()){
-				mExecutorService.shutdown();
-			}
 		}
+		if(null != mExecutorService && !mExecutorService.isShutdown()){
+			mExecutorService.shutdown();
+		}
+		mExecutorService = null;
 	}
 	
 	public class AsyncTask extends Thread{

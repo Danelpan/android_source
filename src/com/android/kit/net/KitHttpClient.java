@@ -223,7 +223,7 @@ public class KitHttpClient {
 		HttpResponse response = httpClient.execute(httpRequest);
     	HttpEntity entity = response.getEntity();
 		BufferedHttpEntity bufHttpEntity = new BufferedHttpEntity(entity);
-    	return bufHttpEntity.getContent();
+		return bufHttpEntity.getContent();
     }
     
     public String getString(String url) throws ClientProtocolException, IOException{

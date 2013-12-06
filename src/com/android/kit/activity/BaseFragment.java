@@ -72,6 +72,13 @@ public class BaseFragment extends Fragment{
 		super.onStop();
 	}
 	
+	public SparseArray<FutureTask<?>> runAsyncTask(TaskListener task,int ...tags){
+		for(int i=0;i<tags.length;i++){
+			runAsyncTask(task,tags[i]);
+		}
+		return mFutureTasks;
+	}
+	
 	/**
 	 * 在线程中加载，和处理耗时事物
 	 * @param task 异步工作线程回调
@@ -127,6 +134,7 @@ public class BaseFragment extends Fragment{
 			}
 			mSparseArray.clear();
 		}
+		
 		if(null != mFutureTasks && mFutureTasks.size()>0){
 			
 			for (int i = 0; i < mFutureTasks.size(); i++) {
@@ -137,10 +145,12 @@ public class BaseFragment extends Fragment{
 				}
 			}
 			mFutureTasks.clear();
-			if(null != mExecutorService && !mExecutorService.isShutdown()){
-				mExecutorService.shutdown();
-			}
 		}
+		
+		if(null != mExecutorService && !mExecutorService.isShutdown()){
+			mExecutorService.shutdown();
+		}
+		mExecutorService = null;
 	}
 	
 	public class AsyncTask extends Thread{
@@ -154,7 +164,7 @@ public class BaseFragment extends Fragment{
 		@Override
 		public void run() {
 			final Object result = mAsyncTask.onTaskLoading(tag);
-			if(isDestroy){ //如果当前界面已经销毁，那么取消回调
+			if(isDestroy || getActivity() == null){ //如果当前界面已经销毁，那么取消回调
 				return;
 			}
 			if(!isCancel){

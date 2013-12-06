@@ -1,6 +1,8 @@
 package com.android.kit.activity;
 
 import android.os.Bundle;
+import android.os.Message;
+import android.os.Handler.Callback;
 /**
  * 一个机遇网络的simple acyivity
  * @author Danel
@@ -36,4 +38,5 @@ public class SimpleBaseActivity extends BaseActivity implements TaskListener {
 	public void onTaskFailure(int mTaskTag, Object result) {
 		
 	}
+	
 }
