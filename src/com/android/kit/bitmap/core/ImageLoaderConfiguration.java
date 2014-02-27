@@ -32,7 +32,7 @@ import com.android.kit.bitmap.core.decode.ImageDecoder;
 import com.android.kit.bitmap.core.download.ImageDownloader;
 import com.android.kit.bitmap.core.download.NetworkDeniedImageDownloader;
 import com.android.kit.bitmap.core.download.SlowNetworkImageDownloader;
-import com.android.kit.utils.KitLog;
+import com.android.kit.bitmap.utils.L;
 
 /**
  * Presents configuration for {@link ImageLoader}
@@ -71,6 +71,7 @@ public final class ImageLoaderConfiguration {
 	final ImageDownloader downloader;
 	final ImageDecoder decoder;
 	final DisplayImageOptions defaultDisplayImageOptions;
+	final boolean loggingEnabled;
 
 	final DiscCacheAware reserveDiscCache;
 	final ImageDownloader networkDeniedDownloader;
@@ -92,6 +93,7 @@ public final class ImageLoaderConfiguration {
 		discCache = builder.discCache;
 		memoryCache = builder.memoryCache;
 		defaultDisplayImageOptions = builder.defaultDisplayImageOptions;
+		loggingEnabled = builder.loggingEnabled;
 		downloader = builder.downloader;
 		decoder = builder.decoder;
 
@@ -233,7 +235,7 @@ public final class ImageLoaderConfiguration {
 		 */
 		public Builder taskExecutor(Executor executor) {
 			if (threadPoolSize != DEFAULT_THREAD_POOL_SIZE || threadPriority != DEFAULT_THREAD_PRIORITY || tasksProcessingType != DEFAULT_TASK_PROCESSING_TYPE) {
-				KitLog.out(WARNING_OVERLAP_EXECUTOR);
+				L.w(WARNING_OVERLAP_EXECUTOR);
 			}
 
 			this.taskExecutor = executor;
@@ -260,7 +262,7 @@ public final class ImageLoaderConfiguration {
 		 */
 		public Builder taskExecutorForCachedImages(Executor executorForCachedImages) {
 			if (threadPoolSize != DEFAULT_THREAD_POOL_SIZE || threadPriority != DEFAULT_THREAD_PRIORITY || tasksProcessingType != DEFAULT_TASK_PROCESSING_TYPE) {
-			    KitLog.out(WARNING_OVERLAP_EXECUTOR);
+				L.w(WARNING_OVERLAP_EXECUTOR);
 			}
 
 			this.taskExecutorForCachedImages = executorForCachedImages;
@@ -273,7 +275,7 @@ public final class ImageLoaderConfiguration {
 		 * */
 		public Builder threadPoolSize(int threadPoolSize) {
 			if (taskExecutor != null || taskExecutorForCachedImages != null) {
-			    KitLog.out(WARNING_OVERLAP_EXECUTOR);
+				L.w(WARNING_OVERLAP_EXECUTOR);
 			}
 
 			this.threadPoolSize = threadPoolSize;
@@ -287,7 +289,7 @@ public final class ImageLoaderConfiguration {
 		 * */
 		public Builder threadPriority(int threadPriority) {
 			if (taskExecutor != null || taskExecutorForCachedImages != null) {
-			    KitLog.out(WARNING_OVERLAP_EXECUTOR);
+				L.w(WARNING_OVERLAP_EXECUTOR);
 			}
 
 			if (threadPriority < Thread.MIN_PRIORITY) {
@@ -321,7 +323,7 @@ public final class ImageLoaderConfiguration {
 		 */
 		public Builder tasksProcessingOrder(QueueProcessingType tasksProcessingType) {
 			if (taskExecutor != null || taskExecutorForCachedImages != null) {
-				KitLog.out(WARNING_OVERLAP_EXECUTOR);
+				L.w(WARNING_OVERLAP_EXECUTOR);
 			}
 
 			this.tasksProcessingType = tasksProcessingType;
@@ -340,7 +342,7 @@ public final class ImageLoaderConfiguration {
 			if (memoryCacheSize <= 0) throw new IllegalArgumentException("memoryCacheSize must be a positive number");
 
 			if (memoryCache != null) {
-				KitLog.out(WARNING_OVERLAP_MEMORY_CACHE);
+				L.w(WARNING_OVERLAP_MEMORY_CACHE);
 			}
 
 			this.memoryCacheSize = memoryCacheSize;
@@ -359,7 +361,7 @@ public final class ImageLoaderConfiguration {
 		 */
 		public Builder memoryCache(MemoryCacheAware<String, Bitmap> memoryCache) {
 			if (memoryCacheSize != 0) {
-				KitLog.out(WARNING_OVERLAP_MEMORY_CACHE);
+				L.w(WARNING_OVERLAP_MEMORY_CACHE);
 			}
 
 			this.memoryCache = memoryCache;
@@ -378,7 +380,7 @@ public final class ImageLoaderConfiguration {
 			if (maxCacheSize <= 0) throw new IllegalArgumentException("maxCacheSize must be a positive number");
 
 			if (discCache != null || discCacheFileCount > 0) {
-				KitLog.out(WARNING_OVERLAP_DISC_CACHE_PARAMS);
+				L.w(WARNING_OVERLAP_DISC_CACHE_PARAMS);
 			}
 
 			this.discCacheSize = maxCacheSize;
@@ -397,7 +399,7 @@ public final class ImageLoaderConfiguration {
 			if (maxFileCount <= 0) throw new IllegalArgumentException("maxFileCount must be a positive number");
 
 			if (discCache != null || discCacheSize > 0) {
-				KitLog.out(WARNING_OVERLAP_DISC_CACHE_PARAMS);
+				L.w(WARNING_OVERLAP_DISC_CACHE_PARAMS);
 			}
 
 			this.discCacheSize = 0;
@@ -413,7 +415,7 @@ public final class ImageLoaderConfiguration {
 		 */
 		public Builder discCacheFileNameGenerator(FileNameGenerator fileNameGenerator) {
 			if (discCache != null) {
-				KitLog.out(WARNING_OVERLAP_DISC_CACHE_NAME_GENERATOR);
+				L.w(WARNING_OVERLAP_DISC_CACHE_NAME_GENERATOR);
 			}
 
 			this.discCacheFileNameGenerator = fileNameGenerator;
@@ -458,10 +460,10 @@ public final class ImageLoaderConfiguration {
 		 */
 		public Builder discCache(DiscCacheAware discCache) {
 			if (discCacheSize > 0 || discCacheFileCount > 0) {
-				KitLog.out(WARNING_OVERLAP_DISC_CACHE_PARAMS);
+				L.w(WARNING_OVERLAP_DISC_CACHE_PARAMS);
 			}
 			if (discCacheFileNameGenerator != null) {
-				KitLog.out(WARNING_OVERLAP_DISC_CACHE_NAME_GENERATOR);
+				L.w(WARNING_OVERLAP_DISC_CACHE_NAME_GENERATOR);
 			}
 
 			this.discCache = discCache;
@@ -518,7 +520,7 @@ public final class ImageLoaderConfiguration {
 				downloader = DefaultConfigurationFactory.createImageDownloader(context);
 			}
 			if (decoder == null) {
-				decoder = DefaultConfigurationFactory.createImageDecoder();
+				decoder = DefaultConfigurationFactory.createImageDecoder(loggingEnabled);
 			}
 			if (defaultDisplayImageOptions == null) {
 				defaultDisplayImageOptions = DisplayImageOptions.createSimple();

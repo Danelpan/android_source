@@ -20,6 +20,7 @@ import android.os.Handler;
 import android.widget.ImageView;
 
 import com.android.kit.bitmap.core.process.BitmapProcessor;
+import com.android.kit.bitmap.utils.L;
 
 /**
  * Presents process'n'display image task. Processes image {@linkplain Bitmap} and display it in {@link ImageView} using
@@ -29,6 +30,8 @@ import com.android.kit.bitmap.core.process.BitmapProcessor;
  * @since 1.8.0
  */
 class ProcessAndDisplayImageTask implements Runnable {
+
+	private static final String LOG_POSTPROCESS_IMAGE = "PostProcess image before displaying [%s]";
 
 	private final ImageLoaderEngine engine;
 	private final Bitmap bitmap;
@@ -44,6 +47,7 @@ class ProcessAndDisplayImageTask implements Runnable {
 
 	@Override
 	public void run() {
+		if (engine.configuration.loggingEnabled) L.i(LOG_POSTPROCESS_IMAGE, imageLoadingInfo.memoryCacheKey);
 		BitmapProcessor processor = imageLoadingInfo.options.getPostProcessor();
 		final Bitmap processedBitmap = processor.process(bitmap);
 		handler.post(new DisplayBitmapTask(processedBitmap, imageLoadingInfo, engine));

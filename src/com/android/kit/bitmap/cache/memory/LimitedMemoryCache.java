@@ -20,7 +20,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.android.kit.utils.KitLog;
+import com.android.kit.bitmap.utils.L;
 
 /**
  * Limited cache. Provides object storing. Size of all stored bitmaps will not to exceed size limit (
@@ -56,7 +56,7 @@ public abstract class LimitedMemoryCache<K, V> extends BaseMemoryCache<K, V> {
 		this.sizeLimit = sizeLimit;
 		cacheSize = new AtomicInteger();
 		if (sizeLimit > MAX_NORMAL_CACHE_SIZE) {
-			KitLog.w("You set too large memory cache size (more than %1$d Mb)", MAX_NORMAL_CACHE_SIZE_IN_MB+"");
+			L.w("You set too large memory cache size (more than %1$d Mb)", MAX_NORMAL_CACHE_SIZE_IN_MB);
 		}
 	}
 

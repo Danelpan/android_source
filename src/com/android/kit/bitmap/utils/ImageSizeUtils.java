@@ -24,7 +24,6 @@ import android.widget.ImageView;
 
 import com.android.kit.bitmap.core.assist.ImageSize;
 import com.android.kit.bitmap.core.assist.ViewScaleType;
-import com.android.kit.utils.KitLog;
 
 /**
  * Provides calculations with image sizes, scales
@@ -78,7 +77,7 @@ public final class ImageSizeUtils {
 				value = fieldValue;
 			}
 		} catch (Exception e) {
-			KitLog.err(e);
+			L.e(e);
 		}
 		return value;
 	}

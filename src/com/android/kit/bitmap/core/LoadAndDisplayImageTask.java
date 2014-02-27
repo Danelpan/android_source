@@ -40,7 +40,7 @@ import com.android.kit.bitmap.core.decode.ImageDecodingInfo;
 import com.android.kit.bitmap.core.download.ImageDownloader;
 import com.android.kit.bitmap.core.download.ImageDownloader.Scheme;
 import com.android.kit.bitmap.utils.IoUtils;
-import com.android.kit.utils.KitLog;
+import com.android.kit.bitmap.utils.L;
 
 /**
  * Presents load'n'display image task. Used to load image from Internet or file system, decode it to {@link Bitmap}, and
@@ -83,6 +83,7 @@ final class LoadAndDisplayImageTask implements Runnable {
 	private final ImageDownloader networkDeniedDownloader;
 	private final ImageDownloader slowNetworkDownloader;
 	private final ImageDecoder decoder;
+	private final boolean loggingEnabled;
 	final String uri;
 	private final String memoryCacheKey;
 	final ImageView imageView;
@@ -100,6 +101,7 @@ final class LoadAndDisplayImageTask implements Runnable {
 		networkDeniedDownloader = configuration.networkDeniedDownloader;
 		slowNetworkDownloader = configuration.slowNetworkDownloader;
 		decoder = configuration.decoder;
+		loggingEnabled = configuration.loggingEnabled;
 		uri = imageLoadingInfo.uri;
 		memoryCacheKey = imageLoadingInfo.memoryCacheKey;
 		imageView = imageLoadingInfo.imageView;
@@ -114,9 +116,9 @@ final class LoadAndDisplayImageTask implements Runnable {
 		if (delayIfNeed()) return;
 
 		ReentrantLock loadFromUriLock = imageLoadingInfo.loadFromUriLock;
-		KitLog.out(LOG_START_DISPLAY_IMAGE_TASK);
+		log(LOG_START_DISPLAY_IMAGE_TASK);
 		if (loadFromUriLock.isLocked()) {
-			KitLog.out(LOG_WAITING_FOR_IMAGE_LOADED);
+			log(LOG_WAITING_FOR_IMAGE_LOADED);
 		}
 
 		loadFromUriLock.lock();
@@ -132,26 +134,26 @@ final class LoadAndDisplayImageTask implements Runnable {
 				if (checkTaskIsNotActual() || checkTaskIsInterrupted()) return;
 
 				if (options.shouldPreProcess()) {
-				    KitLog.out(LOG_PREPROCESS_IMAGE);
+					log(LOG_PREPROCESS_IMAGE);
 					bmp = options.getPreProcessor().process(bmp);
 					if (bmp == null) {
-						KitLog.out(WARNING_PRE_PROCESSOR_NULL);
+						L.w(WARNING_PRE_PROCESSOR_NULL);
 					}
 				}
 
 				if (bmp != null && options.isCacheInMemory()) {
-				    KitLog.out(LOG_CACHE_IMAGE_IN_MEMORY);
+					log(LOG_CACHE_IMAGE_IN_MEMORY);
 					configuration.memoryCache.put(memoryCacheKey, bmp);
 				}
 			} else {
-			    KitLog.out(LOG_GET_IMAGE_FROM_MEMORY_CACHE_AFTER_WAITING);
+				log(LOG_GET_IMAGE_FROM_MEMORY_CACHE_AFTER_WAITING);
 			}
 
 			if (bmp != null && options.shouldPostProcess()) {
-			    KitLog.out(LOG_POSTPROCESS_IMAGE);
+				log(LOG_POSTPROCESS_IMAGE);
 				bmp = options.getPostProcessor().process(bmp);
 				if (bmp == null) {
-					KitLog.d(WARNING_POST_PROCESSOR_NULL, memoryCacheKey);
+					L.w(WARNING_POST_PROCESSOR_NULL, memoryCacheKey);
 				}
 			}
 		} finally {
@@ -161,6 +163,7 @@ final class LoadAndDisplayImageTask implements Runnable {
 		if (checkTaskIsNotActual() || checkTaskIsInterrupted()) return;
 
 		DisplayBitmapTask displayBitmapTask = new DisplayBitmapTask(bmp, imageLoadingInfo, engine);
+		displayBitmapTask.setLoggingEnabled(loggingEnabled);
 		handler.post(displayBitmapTask);
 	}
 
@@ -171,14 +174,14 @@ final class LoadAndDisplayImageTask implements Runnable {
 		AtomicBoolean pause = engine.getPause();
 		if (pause.get()) {
 			synchronized (pause) {
-			    KitLog.out(LOG_WAITING_FOR_RESUME);
+				log(LOG_WAITING_FOR_RESUME);
 				try {
 					pause.wait();
 				} catch (InterruptedException e) {
-					KitLog.d(LOG_TASK_INTERRUPTED, memoryCacheKey);
+					L.e(LOG_TASK_INTERRUPTED, memoryCacheKey);
 					return true;
 				}
-				KitLog.out(LOG_RESUME_AFTER_PAUSE);
+				log(LOG_RESUME_AFTER_PAUSE);
 			}
 		}
 		return checkTaskIsNotActual();
@@ -189,10 +192,11 @@ final class LoadAndDisplayImageTask implements Runnable {
 	 */
 	private boolean delayIfNeed() {
 		if (options.shouldDelayBeforeLoading()) {
+			log(LOG_DELAY_BEFORE_LOADING, options.getDelayBeforeLoading(), memoryCacheKey);
 			try {
 				Thread.sleep(options.getDelayBeforeLoading());
 			} catch (InterruptedException e) {
-			    KitLog.d(LOG_TASK_INTERRUPTED, memoryCacheKey);
+				L.e(LOG_TASK_INTERRUPTED, memoryCacheKey);
 				return true;
 			}
 			return checkTaskIsNotActual();
@@ -216,7 +220,7 @@ final class LoadAndDisplayImageTask implements Runnable {
 					listener.onLoadingCancelled(uri, imageView);
 				}
 			});
-			KitLog.out(LOG_TASK_CANCELLED);
+			log(LOG_TASK_CANCELLED);
 		}
 		return imageViewWasReused;
 	}
@@ -224,7 +228,7 @@ final class LoadAndDisplayImageTask implements Runnable {
 	/** Check whether the current task was interrupted */
 	private boolean checkTaskIsInterrupted() {
 		boolean interrupted = Thread.interrupted();
-		if (interrupted) KitLog.out(LOG_TASK_INTERRUPTED);
+		if (interrupted) log(LOG_TASK_INTERRUPTED);
 		return interrupted;
 	}
 
@@ -234,12 +238,12 @@ final class LoadAndDisplayImageTask implements Runnable {
 		Bitmap bitmap = null;
 		try {
 			if (imageFile.exists()) {
-			    KitLog.out(LOG_LOAD_IMAGE_FROM_DISC_CACHE);
+				log(LOG_LOAD_IMAGE_FROM_DISC_CACHE);
 
 				bitmap = decodeImage(Scheme.FILE.wrap(imageFile.getAbsolutePath()));
 			}
 			if (bitmap == null || bitmap.getWidth() <= 0 || bitmap.getHeight() <= 0) {
-			    KitLog.out(LOG_LOAD_IMAGE_FROM_NETWORK);
+				log(LOG_LOAD_IMAGE_FROM_NETWORK);
 
 				String imageUriForDecoding = options.isCacheOnDisc() ? tryCacheImageOnDisc(imageFile) : uri;
 				if (!checkTaskIsNotActual()) {
@@ -252,16 +256,16 @@ final class LoadAndDisplayImageTask implements Runnable {
 		} catch (IllegalStateException e) {
 			fireImageLoadingFailedEvent(FailType.NETWORK_DENIED, null);
 		} catch (IOException e) {
-			KitLog.printStackTrace(e);
+			L.e(e);
 			fireImageLoadingFailedEvent(FailType.IO_ERROR, e);
 			if (imageFile.exists()) {
 				imageFile.delete();
 			}
 		} catch (OutOfMemoryError e) {
-		    KitLog.printStackTrace(e);
+			L.e(e);
 			fireImageLoadingFailedEvent(FailType.OUT_OF_MEMORY, e);
 		} catch (Throwable e) {
-		    KitLog.printStackTrace(e);
+			L.e(e);
 			fireImageLoadingFailedEvent(FailType.UNKNOWN, e);
 		}
 		return bitmap;
@@ -291,7 +295,7 @@ final class LoadAndDisplayImageTask implements Runnable {
 	 * @return Cached image URI; or original image URI if caching failed
 	 */
 	private String tryCacheImageOnDisc(File targetFile) {
-	    KitLog.out(LOG_CACHE_IMAGE_ON_DISC);
+		log(LOG_CACHE_IMAGE_ON_DISC);
 
 		try {
 			int width = configuration.maxImageWidthForDiscCache;
@@ -307,7 +311,7 @@ final class LoadAndDisplayImageTask implements Runnable {
 			configuration.discCache.put(uri, targetFile);
 			return Scheme.FILE.wrap(targetFile.getAbsolutePath());
 		} catch (IOException e) {
-		    KitLog.printStackTrace(e);
+			L.e(e);
 			return uri;
 		}
 	}
@@ -377,4 +381,11 @@ final class LoadAndDisplayImageTask implements Runnable {
 		return uri;
 	}
 
+	private void log(String message) {
+		if (loggingEnabled) L.i(message, memoryCacheKey);
+	}
+
+	private void log(String message, Object... args) {
+		if (loggingEnabled) L.i(message, args);
+	}
 }

@@ -19,7 +19,7 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import com.android.kit.utils.KitLog;
+import com.android.kit.bitmap.utils.L;
 
 /**
  * Names image file as MD5 hash of image URI
@@ -46,7 +46,7 @@ public class Md5FileNameGenerator implements FileNameGenerator {
 			digest.update(data);
 			hash = digest.digest();
 		} catch (NoSuchAlgorithmException e) {
-			KitLog.printStackTrace(e);
+			L.e(e);
 		}
 		return hash;
 	}

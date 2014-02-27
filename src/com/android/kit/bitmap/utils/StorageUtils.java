@@ -18,8 +18,6 @@ package com.android.kit.bitmap.utils;
 import java.io.File;
 import java.io.IOException;
 
-import com.android.kit.utils.KitLog;
-
 import android.content.Context;
 import android.os.Environment;
 
@@ -98,13 +96,13 @@ public final class StorageUtils {
 		File appCacheDir = new File(new File(dataDir, context.getPackageName()), "cache");
 		if (!appCacheDir.exists()) {
 			if (!appCacheDir.mkdirs()) {
-			    KitLog.out("Unable to create external cache directory");
+				L.w("Unable to create external cache directory");
 				return null;
 			}
 			try {
 				new File(appCacheDir, ".nomedia").createNewFile();
 			} catch (IOException e) {
-			    KitLog.out("Can't create \".nomedia\" file in application external cache directory");
+				L.i("Can't create \".nomedia\" file in application external cache directory");
 			}
 		}
 		return appCacheDir;

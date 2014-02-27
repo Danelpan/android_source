@@ -20,6 +20,7 @@ import android.widget.ImageView;
 
 import com.android.kit.bitmap.core.assist.ImageLoadingListener;
 import com.android.kit.bitmap.core.display.BitmapDisplayer;
+import com.android.kit.bitmap.utils.L;
 
 /**
  * Displays bitmap in {@link ImageView}. Must be called on UI thread.
@@ -31,6 +32,9 @@ import com.android.kit.bitmap.core.display.BitmapDisplayer;
  */
 final class DisplayBitmapTask implements Runnable {
 
+	private static final String LOG_DISPLAY_IMAGE_IN_IMAGEVIEW = "Display image in ImageView [%s]";
+	private static final String LOG_TASK_CANCELLED = "ImageView is reused for another image. Task is cancelled. [%s]";
+
 	private final Bitmap bitmap;
 	private final String imageUri;
 	private final ImageView imageView;
@@ -38,6 +42,8 @@ final class DisplayBitmapTask implements Runnable {
 	private final BitmapDisplayer displayer;
 	private final ImageLoadingListener listener;
 	private final ImageLoaderEngine engine;
+
+	private boolean loggingEnabled;
 
 	public DisplayBitmapTask(Bitmap bitmap, ImageLoadingInfo imageLoadingInfo, ImageLoaderEngine engine) {
 		this.bitmap = bitmap;
@@ -51,8 +57,10 @@ final class DisplayBitmapTask implements Runnable {
 
 	public void run() {
 		if (isViewWasReused()) {
+			if (loggingEnabled) L.i(LOG_TASK_CANCELLED, memoryCacheKey);
 			listener.onLoadingCancelled(imageUri, imageView);
 		} else {
+			if (loggingEnabled) L.i(LOG_DISPLAY_IMAGE_IN_IMAGEVIEW, memoryCacheKey);
 			Bitmap displayedBitmap = displayer.display(bitmap, imageView);
 			listener.onLoadingComplete(imageUri, imageView, displayedBitmap);
 			engine.cancelDisplayTaskFor(imageView);
@@ -65,4 +73,7 @@ final class DisplayBitmapTask implements Runnable {
 		return !memoryCacheKey.equals(currentCacheKey);
 	}
 
+	void setLoggingEnabled(boolean loggingEnabled) {
+		this.loggingEnabled = loggingEnabled;
+	}
 }

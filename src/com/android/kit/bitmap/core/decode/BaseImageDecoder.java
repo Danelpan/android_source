@@ -30,7 +30,7 @@ import com.android.kit.bitmap.core.assist.ImageSize;
 import com.android.kit.bitmap.core.download.ImageDownloader.Scheme;
 import com.android.kit.bitmap.utils.ImageSizeUtils;
 import com.android.kit.bitmap.utils.IoUtils;
-import com.android.kit.utils.KitLog;
+import com.android.kit.bitmap.utils.L;
 
 /**
  * Decodes images to {@link Bitmap}, scales them to needed size
@@ -47,7 +47,13 @@ public class BaseImageDecoder implements ImageDecoder {
 	protected static final String LOG_FLIP_IMAGE = "Flip image horizontally [%s]";
 	protected static final String ERROR_CANT_DECODE_IMAGE = "Image can't be decoded [%s]";
 
+	protected boolean loggingEnabled;
+
 	public BaseImageDecoder() {
+	}
+
+	public BaseImageDecoder(boolean loggingEnabled) {
+		this.loggingEnabled = loggingEnabled;
 	}
 
 	/**
@@ -67,7 +73,7 @@ public class BaseImageDecoder implements ImageDecoder {
 		imageStream = getImageStream(decodingInfo);
 		Bitmap decodedBitmap = decodeStream(imageStream, decodingOptions);
 		if (decodedBitmap == null) {
-		    KitLog.e(ERROR_CANT_DECODE_IMAGE, decodingInfo.getImageKey());
+			L.e(ERROR_CANT_DECODE_IMAGE, decodingInfo.getImageKey());
 		} else {
 			decodedBitmap = considerExactScaleAndOrientaiton(decodedBitmap, decodingInfo, imageInfo.exif.rotation, imageInfo.exif.flipHorizontal);
 		}
@@ -126,7 +132,7 @@ public class BaseImageDecoder implements ImageDecoder {
 						break;
 				}
 			} catch (IOException e) {
-				KitLog.printStackTrace(e);
+				L.w("Can't read EXIF tags from file [%s]", imageUri);
 			}
 		}
 		return new ExifInfo(rotation, flip);
@@ -140,6 +146,7 @@ public class BaseImageDecoder implements ImageDecoder {
 			boolean powerOf2 = scaleType == ImageScaleType.IN_SAMPLE_POWER_OF_2;
 			scale = ImageSizeUtils.computeImageSampleSize(imageSize, targetSize, decodingInfo.getViewScaleType(), powerOf2);
 
+			if (loggingEnabled) L.i(LOG_SABSAMPLE_IMAGE, imageSize, imageSize.scaleDown(scale), scale, decodingInfo.getImageKey());
 		}
 		Options decodingOptions = decodingInfo.getDecodingOptions();
 		decodingOptions.inSampleSize = scale;
@@ -165,17 +172,20 @@ public class BaseImageDecoder implements ImageDecoder {
 			if (Float.compare(scale, 1f) != 0) {
 				m.setScale(scale, scale);
 
+				if (loggingEnabled) L.i(LOG_SCALE_IMAGE, srcSize, srcSize.scale(scale), scale, decodingInfo.getImageKey());
 			}
 		}
 		// Flip bitmap if need
 		if (flipHorizontal) {
 			m.postScale(-1, 1);
 
+			if (loggingEnabled) L.i(LOG_FLIP_IMAGE, decodingInfo.getImageKey());
 		}
 		// Rotate bitmap if need
 		if (rotation != 0) {
 			m.postRotate(rotation);
 
+			if (loggingEnabled) L.i(LOG_ROTATE_IMAGE, rotation, decodingInfo.getImageKey());
 		}
 
 		Bitmap finalBitmap = Bitmap.createBitmap(subsampledBitmap, 0, 0, subsampledBitmap.getWidth(), subsampledBitmap.getHeight(), m, true);
@@ -183,6 +193,10 @@ public class BaseImageDecoder implements ImageDecoder {
 			subsampledBitmap.recycle();
 		}
 		return finalBitmap;
+	}
+
+	public void setLoggingEnabled(boolean loggingEnabled) {
+		this.loggingEnabled = loggingEnabled;
 	}
 
 	protected static class ExifInfo {
