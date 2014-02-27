@@ -13,17 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package com.android.kit.view.photoview.scrollerproxy;
+package com.android.kit.view.photoview;
 
+import android.annotation.TargetApi;
 import android.content.Context;
-import android.widget.Scroller;
 
-public class PreGingerScroller extends ScrollerProxy {
+@TargetApi(14)
+public class IcsScroller extends GingerScroller {
 
-    private Scroller mScroller;
-
-    public PreGingerScroller(Context context) {
-        mScroller = new Scroller(context);
+    public IcsScroller(Context context) {
+        super(context);
     }
 
     @Override
@@ -31,28 +30,4 @@ public class PreGingerScroller extends ScrollerProxy {
         return mScroller.computeScrollOffset();
     }
 
-    @Override
-    public void fling(int startX, int startY, int velocityX, int velocityY, int minX, int maxX, int minY, int maxY,
-                      int overX, int overY) {
-        mScroller.fling(startX, startY, velocityX, velocityY, minX, maxX, minY, maxY);
-    }
-
-    @Override
-    public void forceFinished(boolean finished) {
-        mScroller.forceFinished(finished);
-    }
-
-    public boolean isFinished() {
-        return mScroller.isFinished();
-    }
-
-    @Override
-    public int getCurrX() {
-        return mScroller.getCurrX();
-    }
-
-    @Override
-    public int getCurrY() {
-        return mScroller.getCurrY();
-    }
 }

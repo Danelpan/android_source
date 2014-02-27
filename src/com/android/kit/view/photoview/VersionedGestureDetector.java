@@ -1,4 +1,4 @@
-package com.android.kit.view.photoview.gestures;
+package com.android.kit.view.photoview;
 
 /*******************************************************************************
  * Copyright 2011, 2012 Chris Banes.

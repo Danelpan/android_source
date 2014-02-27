@@ -18,9 +18,9 @@ import android.graphics.BitmapFactory;
  * @author Danel
  *
  */
-public final class CacheUtils {
+public final class KitCacheUtils {
 	
-	private CacheUtils(){};
+	private KitCacheUtils(){};
 	
     /**
      * 保存图片到文件,默认{@link CompressFormat}为JPEG，和quality is max

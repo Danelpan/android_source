@@ -3,10 +3,15 @@ package com.android.kit.net;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.http.Header;
@@ -22,7 +27,10 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.CookieStore;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.protocol.ClientContext;
 import org.apache.http.conn.params.ConnManagerParams;
 import org.apache.http.conn.params.ConnPerRouteBean;
@@ -34,6 +42,7 @@ import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.entity.HttpEntityWrapper;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
@@ -42,12 +51,17 @@ import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.SyncBasicHttpContext;
 
+import android.text.TextUtils;
+
 import com.android.kit.KSDK;
 import com.android.kit.bitmap.core.assist.FlushedInputStream;
-import com.android.kit.http.PersistentCookieStore;
 import com.android.kit.utils.KitLog;
 import com.android.kit.utils.KitStreamUtils;
-
+/**
+ * 轻量级HTTPClient请求类
+ * @author Danel
+ *
+ */
 public class KitHttpClient {
     private static final int DEFAULT_MAX_CONNECTIONS = 10;
     private static final int DEFAULT_SOCKET_TIMEOUT = 30 * 1000;
@@ -61,7 +75,8 @@ public class KitHttpClient {
     private final DefaultHttpClient httpClient;
     private final HttpContext httpContext;
     private final Map<String, String> clientHeaderMap;
-
+    
+    private static String ENCODING = "UTF-8";
 
     /**
      * Creates a new KitHttpClient.
@@ -122,45 +137,22 @@ public class KitHttpClient {
         clientHeaderMap = new HashMap<String, String>();
     }
 
-    /**
-     * Get the underlying HttpClient instance. This is useful for setting
-     * additional fine-grained settings for requests by accessing the
-     * client's ConnectionManager, HttpParams and SchemeRegistry.
-     */
     public HttpClient getHttpClient() {
         return this.httpClient;
     }
 
-    /**
-     * Get the underlying HttpContext instance. This is useful for getting 
-     * and setting fine-grained settings for requests by accessing the
-     * context's attributes such as the CookieStore.
-     */
     public HttpContext getHttpContext() {
         return this.httpContext;
     }
 
-    /**
-     * Sets an optional CookieStore to use when making requests
-     * @param cookieStore The CookieStore implementation to use, usually an instance of {@link PersistentCookieStore}
-     */
     public void setCookieStore(CookieStore cookieStore) {
         httpContext.setAttribute(ClientContext.COOKIE_STORE, cookieStore);
     }
 
-    /**
-     * Sets the User-Agent header to be sent with each request. By default,
-     * "Android Asynchronous Http Client/VERSION (http://loopj.com/android-async-http/)" is used.
-     * @param userAgent the string to use in the User-Agent header.
-     */
     public void setUserAgent(String userAgent) {
         HttpProtocolParams.setUserAgent(this.httpClient.getParams(), userAgent);
     }
 
-    /**
-     * Sets the connection time oout. By default, 10 seconds
-     * @param timeout the connect/socket timeout in milliseconds
-     */
     public void setTimeout(int timeout){
         final HttpParams httpParams = this.httpClient.getParams();
         ConnManagerParams.setTimeout(httpParams, timeout);
@@ -168,52 +160,24 @@ public class KitHttpClient {
         HttpConnectionParams.setConnectionTimeout(httpParams, timeout);
     }
 
-    /**
-     * Sets the SSLSocketFactory to user when making requests. By default,
-     * a new, default SSLSocketFactory is used.
-     * @param sslSocketFactory the socket factory to use for https requests.
-     */
     public void setSSLSocketFactory(SSLSocketFactory sslSocketFactory) {
         this.httpClient.getConnectionManager().getSchemeRegistry().register(new Scheme("https", sslSocketFactory, 443));
     }
     
-    /**
-     * Sets headers that will be added to all requests this client makes (before sending).
-     * @param header the name of the header
-     * @param value the contents of the header
-     */
     public void addHeader(String header, String value) {
         clientHeaderMap.put(header, value);
     }
 
-    /**
-     * Sets basic authentication for the request. Uses AuthScope.ANY. This is the same as
-     * setBasicAuth('username','password',AuthScope.ANY) 
-     * @param username
-     * @param password
-     */
     public void setBasicAuth(String user, String pass){
         AuthScope scope = AuthScope.ANY;
         setBasicAuth(user, pass, scope);
     }
     
-   /**
-     * Sets basic authentication for the request. You should pass in your AuthScope for security. It should be like this
-     * setBasicAuth("username","password", new AuthScope("host",port,AuthScope.ANY_REALM))
-     * @param username
-     * @param password
-     * @param scope - an AuthScope object
-     *
-     */
     public void setBasicAuth( String user, String pass, AuthScope scope){
         UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(user,pass);
         this.httpClient.getCredentialsProvider().setCredentials(scope, credentials);
     }
 
-    //
-    // HTTP GET Requests
-    //
-    //直接获取一个输入流，不再线程中执行的
     public InputStream getInputStream(String url) throws ClientProtocolException, IOException{
     	return getInputStream(url,null);
     }
@@ -237,13 +201,54 @@ public class KitHttpClient {
 		FlushedInputStream in = new FlushedInputStream(new BufferedInputStream(is, 8*1024));
 		return KitStreamUtils.readAsciiLine(in);
     }
+    
+    public InputStream postInputStream(String url) throws ClientProtocolException, IOException{
+        return postInputStream(url,null);
+    }
+    
+    public InputStream postInputStream(String url,HashMap<String, String> params) throws ClientProtocolException, IOException{
+        getUrlWithQueryString(url, params);
+        HttpEntityEnclosingRequestBase httpRequest = new HttpPost(url);
+        httpRequest.setEntity(getEntity(params));
+        HttpResponse response = httpClient.execute(httpRequest,httpContext);
+        HttpEntity entity = response.getEntity();
+        BufferedHttpEntity bufHttpEntity = new BufferedHttpEntity(entity);
+        return bufHttpEntity.getContent();
+    }
+    
+    public String postString(String url) throws ClientProtocolException, IOException{
+        InputStream is = postInputStream(url);
+        FlushedInputStream in = new FlushedInputStream(new BufferedInputStream(is, 8*1024));
+        return KitStreamUtils.readAsciiLine(in);
+    }
+    
+    public String postString(String url,HashMap<String, String> params) throws ClientProtocolException, IOException{
+        InputStream is = postInputStream(url,params);
+        FlushedInputStream in = new FlushedInputStream(new BufferedInputStream(is, 8*1024));
+        return KitStreamUtils.readAsciiLine(in);
+    }
+    
+    public HttpEntity getEntity(HashMap<String, String> params) {
+        HttpEntity entity = null;
+        try {
+            entity = new UrlEncodedFormEntity(getParamsList(params), ENCODING);
+        } catch (UnsupportedEncodingException e) {
+            KitLog.printStackTrace(e);
+        }
+        return entity;
+    }
+    
+    protected List<BasicNameValuePair> getParamsList(HashMap<String, String> params) {
+        List<BasicNameValuePair> lparams = new LinkedList<BasicNameValuePair>();
+        for(ConcurrentHashMap.Entry<String, String> entry : params.entrySet()) {
+            lparams.add(new BasicNameValuePair(entry.getKey(), entry.getValue()));
+        }
+        return lparams;
+    }
 
     public static String getUrlWithQueryString(String url, HashMap<String, String> params) {
-        if(params != null && params.size()>0) {
+        if(null != params && params.size()>0) {
         	Iterator<Entry<String,String>> iterator = params.entrySet().iterator();
-        	if(url.contains("?")){
-        		
-        	}
         	StringBuilder builder = new StringBuilder();
         	while (iterator.hasNext()) {
         		builder.append("&");
@@ -251,11 +256,21 @@ public class KitHttpClient {
 				builder.append(key);
 				builder.append("=");
 				String value = iterator.next().getValue();
+				if(!TextUtils.isEmpty(value)){
+				    try {
+                        value = URLEncoder.encode(value, ENCODING);
+                    } catch (UnsupportedEncodingException e) {
+                       KitLog.printStackTrace(e);
+                    }
+				}
 				builder.append(value);
 			}
         	KitLog.e("Query with params---->", builder.toString());
+        	String mParams = "";
+        	if(builder.length()>0){
+        	    mParams = builder.toString().replaceFirst("&", "");
+        	}
             if (url.indexOf("?") == -1) {
-            	String mParams = builder.toString().replaceFirst("&", "");
                 url += "?" + mParams;
             } else {
                 url += builder.toString();
@@ -264,7 +279,6 @@ public class KitHttpClient {
         KitLog.e("URL---->", url);
         return url;
     }
-
 
     private static class InflatingEntity extends HttpEntityWrapper {
         public InflatingEntity(HttpEntity wrapped) {

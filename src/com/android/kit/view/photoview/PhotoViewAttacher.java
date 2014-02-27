@@ -38,10 +38,6 @@ import android.view.animation.Interpolator;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 
-import com.android.kit.view.photoview.gestures.GestureDetector;
-import com.android.kit.view.photoview.gestures.OnGestureListener;
-import com.android.kit.view.photoview.gestures.VersionedGestureDetector;
-import com.android.kit.view.photoview.scrollerproxy.ScrollerProxy;
 
 public class PhotoViewAttacher implements IPhotoView, View.OnTouchListener,
         OnGestureListener,
