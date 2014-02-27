@@ -115,8 +115,8 @@ public class DefaultConfigurationFactory {
 	}
 
 	/** Creates default implementation of {@link ImageDecoder} - {@link BaseImageDecoder} */
-	public static ImageDecoder createImageDecoder(boolean loggingEnabled) {
-		return new BaseImageDecoder(loggingEnabled);
+	public static ImageDecoder createImageDecoder() {
+		return new BaseImageDecoder();
 	}
 
 	/** Creates default implementation of {@link BitmapDisplayer} - {@link SimpleBitmapDisplayer} */

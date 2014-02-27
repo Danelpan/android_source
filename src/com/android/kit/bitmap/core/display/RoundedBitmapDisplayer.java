@@ -15,6 +15,8 @@
  *******************************************************************************/
 package com.android.kit.bitmap.core.display;
 
+import com.android.kit.utils.KitLog;
+
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
@@ -24,8 +26,6 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.widget.ImageView;
-
-import com.android.kit.bitmap.utils.L;
 
 /**
  * Displays bitmap with rounded corners. <br />
@@ -151,7 +151,7 @@ public class RoundedBitmapDisplayer implements BitmapDisplayer {
 		try {
 			roundBitmap = getRoundedCornerBitmap(bitmap, roundPixels, srcRect, destRect, width, height);
 		} catch (OutOfMemoryError e) {
-			L.e(e, "Can't create bitmap with rounded corners. Not enough memory.");
+		    KitLog.printStackTrace(e);
 			roundBitmap = bitmap;
 		}
 

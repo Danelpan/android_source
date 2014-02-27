@@ -20,7 +20,7 @@ import java.io.File;
 import com.android.kit.bitmap.cache.disc.LimitedDiscCache;
 import com.android.kit.bitmap.cache.disc.naming.FileNameGenerator;
 import com.android.kit.bitmap.core.DefaultConfigurationFactory;
-import com.android.kit.bitmap.utils.L;
+import com.android.kit.utils.KitLog;
 
 /**
  * Disc cache limited by total cache size. If cache size exceeds specified limit then file with the most oldest last
@@ -55,7 +55,7 @@ public class TotalSizeLimitedDiscCache extends LimitedDiscCache {
 	public TotalSizeLimitedDiscCache(File cacheDir, FileNameGenerator fileNameGenerator, int maxCacheSize) {
 		super(cacheDir, fileNameGenerator, maxCacheSize);
 		if (maxCacheSize < MIN_NORMAL_CACHE_SIZE) {
-			L.w("You set too small disc cache size (less than %1$d Mb)", MIN_NORMAL_CACHE_SIZE_IN_MB);
+			KitLog.w("You set too small disc cache size (less than %1$d Mb)", MIN_NORMAL_CACHE_SIZE_IN_MB+"");
 		}
 	}
 

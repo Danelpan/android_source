@@ -167,7 +167,7 @@ public class BaseFragment extends Fragment{
 			if(isDestroy || getActivity() == null){ //如果当前界面已经销毁，那么取消回调
 				return;
 			}
-			if(!isCancel){
+			if(!isCancel && !mFutureTasks.get(tag).isCancelled()){
 				getActivity().runOnUiThread(new Runnable() {
 					
 					@Override
