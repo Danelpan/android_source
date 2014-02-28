@@ -4,7 +4,7 @@ package com.android.kit.net;
  * @author Danel
  *
  */
-public enum Method {
+public enum HttpMethod {
     POST,
     GET
 }

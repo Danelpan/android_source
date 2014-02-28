@@ -126,7 +126,7 @@ public class CacheUtils {
 	 */
 	public static long getUsableSpace(File path) {
 		StatFs stats = new StatFs(path.getPath());
-		return (long) stats.getBlockSize() * (long) stats.getAvailableBlocks();
+		return stats.getBlockSizeLong() * stats.getAvailableBlocksLong();
 	}
 
 	/**

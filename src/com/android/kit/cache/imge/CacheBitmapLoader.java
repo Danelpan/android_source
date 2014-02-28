@@ -21,6 +21,7 @@ import android.util.SparseArray;
 import android.view.View;
 import android.webkit.URLUtil;
 
+import com.android.kit.net.HttpMethod;
 import com.android.kit.net.KitHttpClient;
 import com.android.kit.utils.KitLog;
 import com.android.kit.utils.KitUtils;
@@ -40,22 +41,16 @@ public final class CacheBitmapLoader {
 	private final CacheConfig baseConfig = new CacheConfig();
 	
 	private static LruCache<String, Bitmap> mCache = null;
-	private CacheLoaderListener displayListener;
 	
 	private volatile boolean isPause = false;
 	
 	private final SparseArray<String> cacheKeysForViews = new SparseArray<String>();
 	
-	
 	public CacheBitmapLoader(Context context) {
-		this(context, 5);
-	}
-
-	public CacheBitmapLoader(Context context, int poolSize) {
-		this(context, poolSize, CacheUtils.defaultMMSize(context));
+		this(context, CacheUtils.defaultMMSize(context));
 	}
 	
-	public CacheBitmapLoader(Context context, int poolSize,int cacheSize){
+	public CacheBitmapLoader(Context context,int cacheSize){
 		wrContext = new WeakReference<Context>(context);
 		setThreadPoolsSize(KitUtils.getAvailableProcessors());
 		if(mCache == null){
@@ -66,7 +61,6 @@ public final class CacheBitmapLoader {
 		        }
 		    };
 		}
-		displayListener = new SimpleDisplayer();
 		buildBaseConfig(context);
 	}
 		
@@ -90,6 +84,7 @@ public final class CacheBitmapLoader {
 		baseConfig.setReqHeight(defaultWidth);
 		baseConfig.setReqWidth(defaultWidth);
 		baseConfig.setMapCache(mCache);
+		baseConfig.setLoaderListener(new SimpleDisplayer());
 	}
 	/**
 	 * 获取当前使用的缓存的配置设置
@@ -216,7 +211,7 @@ public final class CacheBitmapLoader {
 	 * @return
 	 */
 	public CacheLoaderListener getDisplayListener() {
-		return displayListener;
+		return baseConfig.getLoaderListener();
 	}
 
 	/**
@@ -224,7 +219,7 @@ public final class CacheBitmapLoader {
 	 * @param displayListener
 	 */
 	public CacheBitmapLoader setDisplayListener(CacheLoaderListener displayListener) {
-		this.displayListener = displayListener;
+	    baseConfig.setLoaderListener(displayListener);
 		return this;
 	}
 
@@ -269,8 +264,8 @@ public final class CacheBitmapLoader {
 		    KitLog.err("当前传入的url不是一个网络连接");
 			return;
 		}
-		this.displayListener = loaderListener;
 		final CacheConfig config = copyBaseConfig(baseConfig);
+		config.setLoaderListener(loaderListener);
 		config.setUrl(url);
 		AsyBitmapTask task = new AsyBitmapTask(config);
 		mExecutorService.submit(task);
@@ -327,7 +322,7 @@ public final class CacheBitmapLoader {
 	 * @param cacheLoaderListener
 	 */
 	public void display(View view,String url,CacheLoaderListener cacheLoaderListener){
-		this.displayListener = cacheLoaderListener;
+		baseConfig.setLoaderListener(cacheLoaderListener);
 		display(view,url);
 	}
 	
@@ -349,16 +344,16 @@ public final class CacheBitmapLoader {
 	private void _doDisplay(CacheConfig config) {
 		String url = config.getUrl();
 		config.setMapKey(url);
-		displayListener.onCacheLoaderStart(config);
+		config.getLoaderListener().onCacheLoaderStart(config);
 		if(TextUtils.isEmpty(url)){
 			KitLog.err("Bitmap of url is null,please check the url is ready...");
-			this.displayListener.onCacheLoaderFinish(config,false);
+			config.getLoaderListener().onCacheLoaderFinish(config,false);
 			return;
 		}
 		prepareDisplayTaskFor(config.getView(), url);
 		if(mCache.snapshot().containsKey(url)){
 			config.setBitmap(mCache.get(url));
-			this.displayListener.onCacheLoaderFinish(config,true);
+			config.getLoaderListener().onCacheLoaderFinish(config,true);
 		}else{
 			AsyBitmapTask task = new AsyBitmapTask(config);
 			mExecutorService.submit(task);
@@ -378,6 +373,7 @@ public final class CacheBitmapLoader {
 		config.setSupportMemoryCache(temp.isSupportMemoryCache());
 		config.setMapCache(temp.getMapCache());
 		config.setHttpMethod(temp.getHttpMethod());
+		config.setLoaderListener(temp.getLoaderListener());
 		return config;
 	}
 	
@@ -436,7 +432,7 @@ public final class CacheBitmapLoader {
 			}
 			if(isRunChaos(config.getView(), config.getUrl())){
 				cancelDisplayTaskFor(config.getView());
-				displayListener.onCacheLoaderFinish(config,config.getBitmap()!=null);
+				config.getLoaderListener().onCacheLoaderFinish(config,config.getBitmap()!=null);
 			}else{
 				KitLog.err("不会加载图片");
 			}
@@ -481,7 +477,7 @@ public final class CacheBitmapLoader {
 	private Bitmap getBitmapFromHttp(CacheConfig cacheConfig){
 	    Bitmap bitmap = null;
         
-        if(displayListener.onCacheLoaderLoading(cacheConfig)){
+        if(cacheConfig.getLoaderListener().onCacheLoaderLoading(cacheConfig)){
             
         }else{
             InputStream is = null;
@@ -554,10 +550,12 @@ public final class CacheBitmapLoader {
             if(isRunChaos(mCacheConfig.getView(), mCacheConfig.getUrl())){
                 Bitmap bitmap = mCache.get(mCacheConfig.getUrl());
                 if(null == bitmap){ //从文件中获取
+                    KitLog.err("try to get bitmap from disk....");
                     bitmap = getBitmapFromFile(mCacheConfig);
                 }
                 
                 if(null == bitmap){ //从网络中获取
+                    KitLog.err("try to get bitmap from http....");
                     bitmap = getBitmapFromHttp(mCacheConfig);
                 }
                 
@@ -613,11 +611,6 @@ public final class CacheBitmapLoader {
 		}else {
 			return false;
 		}
-	}
-	
-	public enum HttpMethod{
-	    POST,
-	    GET
 	}
 	
 }

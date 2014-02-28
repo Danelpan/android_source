@@ -1,10 +1,10 @@
 package com.android.kit.cache.imge;
 
-import com.android.kit.cache.imge.CacheBitmapLoader.HttpMethod;
-
 import android.graphics.Bitmap;
 import android.view.View;
 import android.view.animation.Animation;
+
+import com.android.kit.net.HttpMethod;
 /**
  * 缓存模型配置文件，配置了一些缓存的信息,用以回调给用户
  * <br>通过这些模型大致可以得到，当前操作缓存数据的一些基本信息
@@ -76,6 +76,8 @@ public class CacheConfig {
 	private LruCache<String, Bitmap> mapCache;
 	
 	private String mapKey;
+	
+	private CacheLoaderListener loaderListener;
 	
 	public LruCache<String, Bitmap> getMapCache() {
 		return mapCache;
@@ -203,6 +205,14 @@ public class CacheConfig {
 
     public void setLoadFailureBitmap(Bitmap loadFailureBitmap) {
         this.loadFailureBitmap = loadFailureBitmap;
+    }
+
+    public CacheLoaderListener getLoaderListener() {
+        return loaderListener;
+    }
+
+    public void setLoaderListener(CacheLoaderListener loaderListener) {
+        this.loaderListener = loaderListener;
     }
 
 }
