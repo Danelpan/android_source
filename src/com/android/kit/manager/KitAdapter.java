@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,8 +15,7 @@ import android.widget.ImageView;
 import android.widget.RatingBar;
 import android.widget.TextView;
 
-import com.android.kit.bitmap.core.DisplayImageOptions;
-import com.android.kit.bitmap.core.ImageLoader;
+import com.android.kit.cache.imge.CacheBitmapLoader;
 import com.android.kit.utils.KitLog;
 
 public class KitAdapter extends BaseAdapter {
@@ -31,11 +29,10 @@ public class KitAdapter extends BaseAdapter {
 	private int odd = -1;
 	private int even = -1;
 	
-	private ImageLoader loader;
-	DisplayImageOptions options;
+	private CacheBitmapLoader loader;
 	
 	public KitAdapter(Context context,List<? extends Map<String, Object>> data, int defResource,String[] from, int[] to) {
-		loader = ImageLoader.getInstance();
+	    loader = new CacheBitmapLoader(context) ;
 		this.mData = data;
 		this.mResource = (this.mDropDownResource = defResource);
 		this.mFrom = from;
@@ -43,7 +40,7 @@ public class KitAdapter extends BaseAdapter {
 		this.mInflater = ((LayoutInflater) context.getSystemService("layout_inflater"));
 	}
 	
-	public ImageLoader getImageLoader(){
+	public CacheBitmapLoader getImageLoader(){
 		return loader;
 	}
 	
@@ -60,11 +57,8 @@ public class KitAdapter extends BaseAdapter {
 	 * @param drawableId
 	 */
 	public void setCurrentViewBackground(int loadingBg,int failLoadbg){
-		options = new DisplayImageOptions.Builder()
-		.cacheInMemory()
-		.showStubImage(loadingBg)
-		.showImageOnFail(failLoadbg)
-		.cacheOnDisc().bitmapConfig(Bitmap.Config.ARGB_8888).build();
+	    loader.setLoadingBitmap(loadingBg);
+	    loader.setLoadFailureBitmap(failLoadbg);
 	}
 	
 	/**
@@ -166,7 +160,7 @@ public class KitAdapter extends BaseAdapter {
 							setViewImage((ImageView) v,((Integer) data).intValue());
 						} else {
 							ImageView iv = (ImageView) v;
-							loader.displayImage(text, iv,options);
+							loader.display(iv, text);
 						}
 					} else if ((v instanceof RatingBar)){
 						try {

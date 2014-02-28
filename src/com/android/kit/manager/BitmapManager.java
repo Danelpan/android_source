@@ -2,7 +2,6 @@ package com.android.kit.manager;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.InputStream;
 
 import android.graphics.Bitmap;
@@ -15,10 +14,6 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.view.View;
-
-import com.android.kit.bitmap.core.DisplayImageOptions;
-import com.android.kit.bitmap.core.ImageLoader;
-import com.android.kit.bitmap.core.assist.ImageLoadingListener;
 /**
  * 图片管理工具
  * @author Danel
@@ -111,27 +106,7 @@ public final class BitmapManager {
         }
         return temp;
     }
-    /**
-     * 文件装换成位图
-     * @param file
-     * @return
-     */
-    @Deprecated
-    public static final void file2Bitmap(File file,ImageLoadingListener listener){
-    	if(null == file){
-    		throw new NullPointerException("source file is null ...");
-    	}
-    	if(!file.exists()){
-    		return;
-    	}
-    	ImageLoader loader = ImageLoader.getInstance();
-    	DisplayImageOptions options = new DisplayImageOptions.Builder()
-		.cacheInMemory()
-		.cacheOnDisc().
-		bitmapConfig(Bitmap.Config.ARGB_8888)
-		.build();
-		loader.loadImage(file.getPath(), options , listener);
-    }
+
     /**
      * 位图转换成流
      * @param bitmap

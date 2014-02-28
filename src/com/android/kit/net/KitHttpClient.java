@@ -54,7 +54,7 @@ import org.apache.http.protocol.SyncBasicHttpContext;
 import android.text.TextUtils;
 
 import com.android.kit.KSDK;
-import com.android.kit.bitmap.core.assist.FlushedInputStream;
+import com.android.kit.cache.imge.FlushedInputStream;
 import com.android.kit.utils.KitLog;
 import com.android.kit.utils.KitStreamUtils;
 /**

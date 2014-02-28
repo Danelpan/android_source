@@ -22,7 +22,6 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
-import java.security.KeyStore;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -73,7 +72,7 @@ import org.apache.http.protocol.SyncBasicHttpContext;
 
 import android.content.Context;
 
-import com.android.kit.bitmap.core.assist.FlushedInputStream;
+import com.android.kit.cache.imge.FlushedInputStream;
 import com.android.kit.utils.KitLog;
 import com.android.kit.utils.KitStreamUtils;
 
