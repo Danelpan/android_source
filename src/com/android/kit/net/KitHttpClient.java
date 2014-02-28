@@ -4,13 +4,10 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.GZIPInputStream;
 
@@ -50,8 +47,6 @@ import org.apache.http.params.HttpProtocolParams;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.SyncBasicHttpContext;
-
-import android.text.TextUtils;
 
 import com.android.kit.KSDK;
 import com.android.kit.cache.imge.FlushedInputStream;
@@ -178,54 +173,100 @@ public class KitHttpClient {
         this.httpClient.getCredentialsProvider().setCredentials(scope, credentials);
     }
 
+    /**
+     * 根据URL,获取网络请求输入流
+     * @param url
+     * @return
+     * @throws ClientProtocolException
+     * @throws IOException
+     */
     public InputStream getInputStream(String url) throws ClientProtocolException, IOException{
-    	return getInputStream(url,null);
+        return getInputStream(url,null);
     }
     
-    public InputStream getInputStream(String url,HashMap<String, String> params) throws ClientProtocolException, IOException{
-    	HttpGet httpRequest = new HttpGet(getUrlWithQueryString(url,params));
-		HttpResponse response = httpClient.execute(httpRequest);
-    	HttpEntity entity = response.getEntity();
-		BufferedHttpEntity bufHttpEntity = new BufferedHttpEntity(entity);
-		return bufHttpEntity.getContent();
+    /**
+     * 根据URL,获取网络请求输入流
+     * @param url
+     * @param params
+     * @return
+     * @throws ClientProtocolException
+     * @throws IOException
+     */
+    public InputStream getInputStream(String url,RequestParams params) throws ClientProtocolException, IOException{
+        HttpGet httpRequest = new HttpGet(getUrlWithQueryString(url,params));
+        HttpResponse response = httpClient.execute(httpRequest);
+        HttpEntity entity = response.getEntity();
+        BufferedHttpEntity bufHttpEntity = new BufferedHttpEntity(entity);
+        return bufHttpEntity.getContent();
     }
     
+    /**
+     * 根据URL,获取网络请求字符串
+     * @param url
+     * @return
+     * @throws ClientProtocolException
+     * @throws IOException
+     */
     public String getString(String url) throws ClientProtocolException, IOException{
-    	InputStream is = getInputStream(url);
-		FlushedInputStream in = new FlushedInputStream(new BufferedInputStream(is, 8*1024));
-		return KitStreamUtils.readAsciiLine(in);
+        InputStream is = getInputStream(url);
+        FlushedInputStream in = new FlushedInputStream(new BufferedInputStream(is, 8*1024));
+        return KitStreamUtils.readAsciiLine(in);
     }
     
-    public String getString(String url,HashMap<String, String> params) throws ClientProtocolException, IOException{
-    	InputStream is = getInputStream(url,params);
-		FlushedInputStream in = new FlushedInputStream(new BufferedInputStream(is, 8*1024));
-		return KitStreamUtils.readAsciiLine(in);
+    /**
+     * 根据URL,获取网络请求字符串
+     * @param url
+     * @param params
+     * @return
+     * @throws ClientProtocolException
+     * @throws IOException
+     */
+    public String getString(String url,RequestParams params) throws ClientProtocolException, IOException{
+        InputStream is = getInputStream(url,params);
+        FlushedInputStream in = new FlushedInputStream(new BufferedInputStream(is, 8*1024));
+        return KitStreamUtils.readAsciiLine(in);
     }
     
     public InputStream postInputStream(String url) throws ClientProtocolException, IOException{
         return postInputStream(url,null);
     }
     
-    public InputStream postInputStream(String url,HashMap<String, String> params) throws ClientProtocolException, IOException{
+    public InputStream postInputStream(String url,RequestParams params) throws ClientProtocolException, IOException{
         getUrlWithQueryString(url, params);
         HttpEntityEnclosingRequestBase httpRequest = new HttpPost(url);
-        httpRequest.setEntity(getEntity(params));
-        HttpResponse response = httpClient.execute(httpRequest,httpContext);
+        HttpResponse response = httpClient.execute(addEntityToRequestBase(httpRequest,paramsToEntity(params)),httpContext);
         HttpEntity entity = response.getEntity();
         BufferedHttpEntity bufHttpEntity = new BufferedHttpEntity(entity);
         return bufHttpEntity.getContent();
     }
-    
     public String postString(String url) throws ClientProtocolException, IOException{
         InputStream is = postInputStream(url);
         FlushedInputStream in = new FlushedInputStream(new BufferedInputStream(is, 8*1024));
         return KitStreamUtils.readAsciiLine(in);
     }
     
-    public String postString(String url,HashMap<String, String> params) throws ClientProtocolException, IOException{
+    public String postString(String url,RequestParams params) throws ClientProtocolException, IOException{
         InputStream is = postInputStream(url,params);
         FlushedInputStream in = new FlushedInputStream(new BufferedInputStream(is, 8*1024));
         return KitStreamUtils.readAsciiLine(in);
+    }
+    
+    private HttpEntity paramsToEntity(RequestParams params) {
+        HttpEntity entity = null;
+
+        if(params != null) {
+            entity = params.getEntity();
+        }
+
+        return entity;
+    }
+    
+    private HttpEntityEnclosingRequestBase addEntityToRequestBase(HttpEntityEnclosingRequestBase requestBase, HttpEntity entity) {
+        if(entity != null){
+            requestBase.setEntity(entity);
+        }
+
+        return requestBase;
     }
     
     public HttpEntity getEntity(HashMap<String, String> params) {
@@ -246,40 +287,19 @@ public class KitHttpClient {
         return lparams;
     }
 
-    public static String getUrlWithQueryString(String url, HashMap<String, String> params) {
-        if(null != params && params.size()>0) {
-        	Iterator<Entry<String,String>> iterator = params.entrySet().iterator();
-        	StringBuilder builder = new StringBuilder();
-        	while (iterator.hasNext()) {
-        		builder.append("&");
-				String key = iterator.next().getKey();
-				builder.append(key);
-				builder.append("=");
-				String value = iterator.next().getValue();
-				if(!TextUtils.isEmpty(value)){
-				    try {
-                        value = URLEncoder.encode(value, ENCODING);
-                    } catch (UnsupportedEncodingException e) {
-                       KitLog.printStackTrace(e);
-                    }
-				}
-				builder.append(value);
-			}
-        	KitLog.e("Query with params---->", builder.toString());
-        	String mParams = "";
-        	if(builder.length()>0){
-        	    mParams = builder.toString().replaceFirst("&", "");
-        	}
+    public static String getUrlWithQueryString(String url, RequestParams params) {
+        if(params != null) {
+            String paramString = params.getParamString();
             if (url.indexOf("?") == -1) {
-                url += "?" + mParams;
+                url += "?" + paramString;
             } else {
-                url += builder.toString();
+                url += "&" + paramString;
             }
         }
-        KitLog.e("URL---->", url);
+        KitLog.e("URL", url);
         return url;
     }
-
+    
     private static class InflatingEntity extends HttpEntityWrapper {
         public InflatingEntity(HttpEntity wrapped) {
             super(wrapped);
