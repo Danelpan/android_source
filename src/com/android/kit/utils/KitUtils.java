@@ -15,11 +15,8 @@
  */
 package com.android.kit.utils;
 
-import java.io.File;
-import java.io.FileFilter;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.regex.Pattern;
 
 import android.content.Context;
 import android.net.ConnectivityManager;
@@ -34,7 +31,6 @@ import android.net.NetworkInfo;
  * @summary 提供一些公用的方法工具
  */
 public final class KitUtils {
-	private static ExecutorService threasPools;
 	
 	private KitUtils(){}
 	/**
@@ -187,28 +183,16 @@ public final class KitUtils {
 	}
 
 	public static final ExecutorService getThreasPools(){
-		if(threasPools == null){
-			threasPools = Executors.newFixedThreadPool(getCPUCores());
-		}
-		return threasPools;
+	    ExecutorService	mExecutorService = Executors.newFixedThreadPool(getAvailableProcessors());
+		return mExecutorService;
 	}
 	
-	public static int getCPUCores() {
-		class CpuFilter implements FileFilter {
-			@Override
-			public boolean accept(File pathname) {
-				if (Pattern.matches("cpu[0-9]", pathname.getName())) {
-					return true;
-				}
-				return false;
-			}
+	public static int getAvailableProcessors() {
+		int size = Runtime.getRuntime().availableProcessors();
+		if(size<=0){
+		    size = 1;
 		}
-		try {
-			File dir = new File("/sys/devices/system/cpu/");
-			File[] files = dir.listFiles(new CpuFilter());
-			return files.length;
-		} catch (Exception e) {}
-		return 1;
+		return size;
 	}
 
 }
