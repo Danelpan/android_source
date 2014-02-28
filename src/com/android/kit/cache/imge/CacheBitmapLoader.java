@@ -23,6 +23,8 @@ import android.webkit.URLUtil;
 
 import com.android.kit.net.HttpMethod;
 import com.android.kit.net.KitHttpClient;
+import com.android.kit.utils.KitCacheUtils;
+import com.android.kit.utils.KitFileUtils;
 import com.android.kit.utils.KitLog;
 import com.android.kit.utils.KitUtils;
 
@@ -158,7 +160,7 @@ public final class CacheBitmapLoader {
 	 * @param cachePath
 	 */
 	public CacheBitmapLoader setCachePath(String cachePath) {
-		CacheUtils.createFile(cachePath);
+	    KitFileUtils.createFile(cachePath);
 		baseConfig.setCachePath(cachePath);
 		return this;
 	}
@@ -177,7 +179,7 @@ public final class CacheBitmapLoader {
 	 */
 	public CacheBitmapLoader setLoadingBitmap(int res){
 	    setLoadingBitmap(
-				CacheUtils.decodeSampledBitmapFromResource(getContext().getResources(), 
+				KitCacheUtils.decodeSampledBitmapFromResource(getContext().getResources(), 
 				res,
 				baseConfig.getReqWidth(), 
 				baseConfig.getReqHeight()));
@@ -199,7 +201,7 @@ public final class CacheBitmapLoader {
 	 */
 	public CacheBitmapLoader setLoadFailureBitmap(int res){
 	    setLoadFailureBitmap(
-				CacheUtils.decodeSampledBitmapFromResource(getContext().getResources(),
+	            KitCacheUtils.decodeSampledBitmapFromResource(getContext().getResources(),
 				res,
 				baseConfig.getReqWidth(),
 				baseConfig.getReqHeight()));
@@ -260,15 +262,29 @@ public final class CacheBitmapLoader {
 	 * @param loaderListener
 	 */
 	public void getBitmapFromCache(final String url,final CacheLoaderListener loaderListener){
-		if(null == url || !URLUtil.isNetworkUrl(url)){
-		    KitLog.err("当前传入的url不是一个网络连接");
-			return;
-		}
-		final CacheConfig config = copyBaseConfig(baseConfig);
-		config.setLoaderListener(loaderListener);
-		config.setUrl(url);
-		AsyBitmapTask task = new AsyBitmapTask(config);
-		mExecutorService.submit(task);
+	    getBitmapFromCache(baseConfig,url,loaderListener);
+	}
+	
+	public void getBitmapFromCache(View view,final String url,final CacheLoaderListener loaderListener){
+	    baseConfig.setView(view);
+	    getBitmapFromCache(baseConfig,url,loaderListener);
+	}
+	
+	public void getBitmapFromCache(CacheConfig cacheConfig,String url,final CacheLoaderListener loaderListener){
+        final CacheConfig config = copyBaseConfig(cacheConfig);
+        config.setLoaderListener(loaderListener);
+        config.setUrl(url);
+        _getBitmapFromCache(config);
+	}
+	
+	private void _getBitmapFromCache(CacheConfig cacheConfig){
+	    String url = cacheConfig.getUrl();
+	    if(TextUtils.isEmpty(url) || !URLUtil.isNetworkUrl(url)){
+            KitLog.err("当前传入的url不是一个网络连接");
+            return;
+        }
+	    AsyBitmapTask task = new AsyBitmapTask(cacheConfig);
+        mExecutorService.submit(task);
 	}
 	
 	/**
@@ -502,7 +518,7 @@ public final class CacheBitmapLoader {
             
             if(is != null){ //正常从网络中获取流
                 String key = CacheUtils.createKey(cacheConfig.getUrl());
-                CacheUtils.createFile(cacheConfig.getCachePath());
+                KitFileUtils.createFile(cacheConfig.getCachePath());
                 File file = new File(cacheConfig.getCachePath(), 
                         key+(TextUtils.isEmpty(cacheConfig.getSuffix())?"":cacheConfig.getSuffix()));
                 //防止覆盖图片情况，这种情况解决图片重复覆盖导致失真问题
