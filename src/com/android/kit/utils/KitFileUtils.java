@@ -45,7 +45,7 @@ public final class KitFileUtils {
     }
     
     /**
-     * 获取缓存的目录
+     * 获取缓存的目录，
      * @param context
      * @return
      */

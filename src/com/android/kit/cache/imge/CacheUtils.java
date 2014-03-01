@@ -61,19 +61,6 @@ public class CacheUtils {
     }
 
     /**
-     * 获取bitmap的字节大小
-     * 
-     * @param bitmap
-     * @return
-     */
-    public static int getBitmapSize(Bitmap bitmap) {
-        if (bitmap == null) {
-            return 0;
-        }
-        return bitmap.getRowBytes() * bitmap.getHeight();
-    }
-
-    /**
      * 默认缓存大小
      * 
      * @param context
@@ -234,45 +221,6 @@ public class CacheUtils {
             }
         }
         return bitmap;
-    }
-
-    /**
-     * 保存图片到硬盘缓存
-     */
-    public static synchronized void saveBitmapToFile(InputStream is, File file) {
-        BufferedOutputStream out = null;
-        FlushedInputStream in = null;
-        FileOutputStream outputStream = null;
-        try {
-            in = new FlushedInputStream(new BufferedInputStream(is, 8 * 1024));
-            outputStream = new FileOutputStream(file);
-            out = new BufferedOutputStream(outputStream, 8 * 1024);
-            int b;
-            while ((b = in.read()) != -1) {
-                out.write(b);
-            }
-        } catch (Exception e) {
-            if (file != null && file.exists()) {
-                file.delete();
-            }
-            file = null;
-        } finally {
-            try {
-                if (out != null) {
-                    out.close();
-                }
-                if (null != outputStream) {
-                    outputStream.close();
-                }
-                if (in != null) {
-                    in.close();
-                }
-                if (null != is) {
-                    is.close();
-                }
-            } catch (final IOException e) {
-            }
-        }
     }
 
     /**

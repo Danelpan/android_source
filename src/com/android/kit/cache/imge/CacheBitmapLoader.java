@@ -23,6 +23,7 @@ import android.webkit.URLUtil;
 
 import com.android.kit.net.HttpMethod;
 import com.android.kit.net.KitHttpClient;
+import com.android.kit.utils.KitBitmapUtils;
 import com.android.kit.utils.KitCacheUtils;
 import com.android.kit.utils.KitFileUtils;
 import com.android.kit.utils.KitLog;
@@ -59,7 +60,7 @@ public final class CacheBitmapLoader {
 		    mCache = new LruCache<String, Bitmap>(cacheSize){
 		        @Override
 		        protected int sizeOf(String key, Bitmap bitmap) {
-		            return CacheUtils.getBitmapSize(bitmap);
+		            return KitBitmapUtils.getBitmapSize(bitmap);
 		        }
 		    };
 		}
@@ -524,7 +525,7 @@ public final class CacheBitmapLoader {
                 //防止覆盖图片情况，这种情况解决图片重复覆盖导致失真问题
                 if(file.exists()){ //如果文件存在了那么就不覆盖文件
                 }else{
-                    CacheUtils.saveBitmapToFile(is, file);
+                    KitBitmapUtils.stream2File(is, file);
                 }
                 bitmap = CacheUtils.getBitmapFromFile(file, cacheConfig);
                 if(!cacheConfig.isSupportDiskCache()){ //如果不支持硬盘缓存，那么就把文件删除
