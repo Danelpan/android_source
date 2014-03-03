@@ -1,15 +1,11 @@
 
 package com.android.kit.cache.imge;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
@@ -30,9 +26,9 @@ import com.android.kit.utils.KitLog;
  * @author Danel
  * @summary 图片缓存工具类，该类提供了简单的图片信息配置，和一些文件的基本操作
  */
-public class CacheUtils {
+public final class CacheUtils {
 
-    private static String cachePath = "";
+    private static String imageCachePath = "";
 
     private CacheUtils() {
     }
@@ -42,22 +38,71 @@ public class CacheUtils {
      * 
      * @return
      */
-    public static boolean isMounted() {
-        return Environment.MEDIA_MOUNTED.equals(Environment
-                .getExternalStorageState());
+    public static final boolean isMounted() {
+        return Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState());
     }
-
+    
+    public static final String getSDCard(){
+        String path = "";
+        if(isMounted()){
+            path = Environment.getExternalStorageDirectory().getPath();
+        }
+        return path;
+    }
+    
+    public static final String getDefaultImageCachePath(Context context){
+        String path = "";
+        if(isMounted()){
+            path = getSDCard() + File.separator + "Android"+ File.separator +"data" + File.separator + context.getPackageName() + File.separator + "imgCache" + File.separator;
+        }else {
+            path = context.getCacheDir().getPath()+File.separator+"imgCache"+File.separator;
+        }
+        return path;
+    }
+    
     /**
-     * 获取可以使用的缓存目录
+     * 获取程序外部的缓存目录
      * 
      * @param context
-     * @param uniqueName 目录名称
      * @return
      */
-    public static File getDiskCacheDir(Context context) {
-        String cachePath = isMounted() ? getExternalCacheDir(context).getPath()
-                : context.getCacheDir().getPath();
-        return new File(cachePath + File.separator);
+    public static final File getCacheDir(Context context) {
+        String cacheDir = getDefaultImageCachePath(context);
+        
+        if(isMounted()){
+            
+            if(!TextUtils.isEmpty(imageCachePath)){
+                cacheDir = imageCachePath;
+                if (!cacheDir.startsWith(getSDCard())) {
+                    
+                    if(!cacheDir.startsWith(File.separator)){
+                        cacheDir = File.separator + cacheDir;
+                    }
+                    
+                    cacheDir =  getSDCard() + cacheDir;
+                }
+            }
+            
+        }
+        KitLog.e("CacheDir", cacheDir);
+        return KitFileUtils.createFile(cacheDir);
+    }
+    
+    /**
+     * 设置图片SDcard存储路径
+     * 
+     * @param cachePath
+     */
+    public static final void setImageCachePath(String cachePath) {
+        CacheUtils.imageCachePath = cachePath;
+    }
+    
+    /**
+     * 获取自定义的图片目录
+     * @return
+     */
+    public static final String getImageCachePath(){
+        return CacheUtils.imageCachePath;
     }
 
     /**
@@ -66,7 +111,7 @@ public class CacheUtils {
      * @param context
      * @return
      */
-    public static int defaultMMSize(Context context) {
+    public static final int defaultMMSize(Context context) {
         return Math.round(getMemoryClass(context) * 1024 * 1024 / 4);
     }
 
@@ -76,30 +121,8 @@ public class CacheUtils {
      * @param context
      * @return
      */
-    public static int getMemoryClass(Context context) {
-        return ((ActivityManager) context
-                .getSystemService(Context.ACTIVITY_SERVICE)).getMemoryClass();
-    }
-
-    /**
-     * 获取程序外部的缓存目录
-     * 
-     * @param context
-     * @return
-     */
-    public static File getExternalCacheDir(Context context) {
-        String cacheDir = "";
-        if (TextUtils.isEmpty(cachePath)) {
-            cacheDir = "/Android/data/" + context.getPackageName()
-                    + "/imgCache/";
-        } else {
-            cacheDir = cachePath;
-            if (cacheDir.startsWith(Environment.getExternalStorageDirectory().getPath())) {
-                return KitFileUtils.createFile(cacheDir);
-            }
-        }
-        return KitFileUtils.createFile(Environment.getExternalStorageDirectory().getPath()
-                + cacheDir);
+    public static final int getMemoryClass(Context context) {
+        return ((ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE)).getMemoryClass();
     }
 
     /**
@@ -108,18 +131,9 @@ public class CacheUtils {
      * @param path
      * @return
      */
-    public static long getUsableSpace(File path) {
+    public static final long getUsableSpace(File path) {
         StatFs stats = new StatFs(path.getPath());
         return stats.getBlockSizeLong() * stats.getAvailableBlocksLong();
-    }
-
-    /**
-     * 设置图片SDcard存储路径
-     * 
-     * @param cachePath
-     */
-    public static void setExternalCachePath(String cachePath) {
-        CacheUtils.cachePath = cachePath;
     }
 
     /**
@@ -128,7 +142,7 @@ public class CacheUtils {
      * @param key
      * @return
      */
-    public static String generator(String key) {
+    public static final String generator(String key) {
         String cacheKey;
         try {
             MessageDigest mDigest = MessageDigest.getInstance("MD5");
@@ -140,13 +154,13 @@ public class CacheUtils {
         return cacheKey;
     }
 
-    public static String createKey(String value) {
+    public static final String createKey(String value) {
         String key = "";
         key = CacheUtils.generator(value);
         return key;
     }
 
-    private static String bytesToHexString(byte[] bytes) {
+    private static final String bytesToHexString(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < bytes.length; i++) {
             String hex = Integer.toHexString(0xFF & bytes[i]);
@@ -166,7 +180,7 @@ public class CacheUtils {
      * @param suffix
      * @return
      */
-    public static File getDiskCacheFile(String dir, String name, String suffix) {
+    public static final File getDiskCacheFile(String dir, String name, String suffix) {
         name += TextUtils.isEmpty(suffix) ? "" : "." + suffix;
         File file = new File(KitFileUtils.createFile(dir), name);
         return file;
@@ -180,8 +194,8 @@ public class CacheUtils {
      * @param suffix
      * @return
      */
-    public static File getDiskCacheFile(Context context, String name, String suffix) {
-        return getDiskCacheFile(getExternalCacheDir(context).getPath(), createKey(name), suffix);
+    public static final File getDiskCacheFile(Context context, String name, String suffix) {
+        return getDiskCacheFile(getCacheDir(context).getPath(), createKey(name), suffix);
     }
 
     /**
@@ -191,7 +205,7 @@ public class CacheUtils {
      * @param config
      * @return
      */
-    public static synchronized Bitmap getBitmapFromFile(File file, CacheConfig config) {
+    public static final synchronized Bitmap getBitmapFromFile(File file, CacheConfig config) {
         Bitmap bitmap = null;
         if (file.exists()) {
             FileInputStream inputStream = null;
@@ -226,7 +240,7 @@ public class CacheUtils {
     /**
      * 更具提供的path路径清空当前的文件
      */
-    public static void clearCurrentCachePath(String path) {
+    public static final void clearCurrentCachePath(String path) {
         if (CacheUtils.isMounted()) {
             try {
                 File file = KitFileUtils.createFile(path);
@@ -252,7 +266,7 @@ public class CacheUtils {
      * @param expired
      * @return
      */
-    public static boolean removeExpiredCache(Context context, String path,
+    public static final boolean removeExpiredCache(Context context, String path,
             int expired) {
         if (isMounted()) {
             try {

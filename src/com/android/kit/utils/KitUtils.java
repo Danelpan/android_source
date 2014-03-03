@@ -194,5 +194,56 @@ public final class KitUtils {
 		}
 		return size;
 	}
+	
+	/**
+	 * 
+	 * @param context
+	 * @param dpValue
+	 * @return
+	 */
+    public static int dip2px(Context context, int dpValue) {
+        float scale = 0;
+        try{
+            scale = context.getResources().getDisplayMetrics().density;
+        }catch(Exception e){
+            return dpValue;
+        }
+        return (int) (dpValue * scale + 0.5f);
+    }
+    
+    /**
+     * 
+     * @param context
+     * @param pxValue
+     * @return
+     */
+    public static int px2dip(Context context, int pxValue) {
+        final float scale = context.getResources().getDisplayMetrics().density;
+        return (int) (pxValue / scale + 0.5f);
+    }
+
+    /**
+     * 将px值转换为sp值，保证文字大小不变
+     * 
+     * @param pxValue
+     * @param fontScale（DisplayMetrics类中属性scaledDensity）
+     * @return
+     */
+    public static int px2sp(Context context, int pxValue) {
+        final float scale = context.getResources().getDisplayMetrics().scaledDensity;
+        return (int) (pxValue / scale + 0.5f);
+    }
+
+    /**
+     * 将sp值转换为px值，保证文字大小不变
+     * 
+     * @param spValue
+     * @param fontScale（DisplayMetrics类中属性scaledDensity）
+     * @return
+     */
+    public static int sp2px(Context context, int spValue) {
+        final float scale = context.getResources().getDisplayMetrics().scaledDensity;
+        return (int) (spValue * scale + 0.5f);
+    }
 
 }

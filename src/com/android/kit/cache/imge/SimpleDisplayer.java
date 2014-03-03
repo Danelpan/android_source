@@ -101,7 +101,7 @@ public class SimpleDisplayer implements CacheLoaderListener {
     }
 
     private void animateFade(View imageView, long durationMillis) {
-        AlphaAnimation fadeImage = new AlphaAnimation(0, 1);
+        AlphaAnimation fadeImage = new AlphaAnimation(0.2f, 1f);
         fadeImage.setDuration(durationMillis);
         fadeImage.setInterpolator(new DecelerateInterpolator());
         imageView.startAnimation(fadeImage);

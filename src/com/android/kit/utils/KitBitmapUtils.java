@@ -21,6 +21,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.view.View;
 
 public final class KitBitmapUtils {
     private KitBitmapUtils() {
@@ -115,6 +116,19 @@ public final class KitBitmapUtils {
         bitmap.compress(format, quality, baos);
         InputStream stream = new ByteArrayInputStream(baos.toByteArray());
         return stream;
+    }
+    
+    /**
+     * 截获view图片
+     * 
+     * @param view
+     * @return 返回该图片
+     */
+    public static final Bitmap view2Bitmap(View view) {
+        view.setDrawingCacheEnabled(false);
+        view.buildDrawingCache();
+        Bitmap bitmap = view.getDrawingCache();
+        return bitmap;
     }
     
     /**

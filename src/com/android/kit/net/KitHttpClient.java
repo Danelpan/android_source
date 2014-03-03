@@ -48,7 +48,6 @@ import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.SyncBasicHttpContext;
 
-import com.android.kit.KSDK;
 import com.android.kit.cache.imge.FlushedInputStream;
 import com.android.kit.utils.KitLog;
 import com.android.kit.utils.KitStreamUtils;
@@ -89,7 +88,6 @@ public class KitHttpClient {
         HttpConnectionParams.setSocketBufferSize(httpParams, DEFAULT_SOCKET_BUFFER_SIZE);
 
         HttpProtocolParams.setVersion(httpParams, HttpVersion.HTTP_1_1);
-        HttpProtocolParams.setUserAgent(httpParams, String.format("%s/%s",KSDK.getName() ,KSDK.getVersion()));
 
         SchemeRegistry schemeRegistry = new SchemeRegistry();
         schemeRegistry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));

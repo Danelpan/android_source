@@ -81,7 +81,7 @@ public final class CacheBitmapLoader {
 	 */
 	private void buildBaseConfig(Context context){
 		baseConfig.setSuffix(".pic");
-		baseConfig.setCachePath(CacheUtils.getExternalCacheDir(context).getAbsolutePath());
+		baseConfig.setCachePath(CacheUtils.getCacheDir(context).getAbsolutePath());
 		DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
 		int defaultWidth = (int)Math.floor((displayMetrics.widthPixels*5)/6);
 		baseConfig.setReqHeight(defaultWidth);
@@ -161,6 +161,7 @@ public final class CacheBitmapLoader {
 	 * @param cachePath
 	 */
 	public CacheBitmapLoader setCachePath(String cachePath) {
+	    KitLog.e("setCachePath", "当前自定义图片缓存路径:"+cachePath);
 	    KitFileUtils.createFile(cachePath);
 		baseConfig.setCachePath(cachePath);
 		return this;
