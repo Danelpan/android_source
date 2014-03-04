@@ -30,10 +30,20 @@ import com.android.kit.utils.KitLog;
 import com.android.kit.utils.KitUtils;
 
 /**
- * 缓存处理公共入口，该入口可以配置缓存的一些基础信息，同时触发使用缓存，通过配置可以
- * <br>做到缓存处理，达到一些必要效果
- * <br>同时给出了几个入口展示，从缓存获取信息，从网络获取信息
- * 
+ * <h3>图片缓存核心类</h3>
+ * <br>该类封装了一个图片加载过程，通过该过程可以通过{@link CacheConfig}来配置当前加载的模型
+ * <br>该图片加载，我们不必要过多的担心OOM，只要处理好相应的图片显示即可。具体配置实现如下：
+ * <pre>
+ * CacheBitmapLoader bitmapLoader = new CacheBitmapLoader(context)
+ * .setLoadingBitmap(R.drawable.ic_launcher)
+ * .setLoadFailureBitmap(R.drawable.ic_error)
+ * .setCachePath(context.getFilesDir().getPath())
+ * .setDisplayListener(new SimpleDisplayer(DisplayerType.TYPE_FADE))
+ * .setSupportDiskCache(true)
+ * .setSupportMemoryCache(true);
+ * </pre>
+ * 当然，该类的配置是可选填项，如果简单的使用，实例化该类即可使用
+ * <br><br>
  * @author Danel
  * 
  */
@@ -68,7 +78,7 @@ public final class CacheBitmapLoader {
 	}
 		
 	/**
-	 * 实例化文件线程池
+	 * 设置线程池大小
 	 * @param poolSize
 	 */
 	public void setThreadPoolsSize(int poolSize){
@@ -76,7 +86,7 @@ public final class CacheBitmapLoader {
 	}
 	
 	/**
-	 * 初始化一些常用
+	 * 初始化基础配置信息模型
 	 * @param context
 	 */
 	private void buildBaseConfig(Context context){
@@ -89,6 +99,7 @@ public final class CacheBitmapLoader {
 		baseConfig.setMapCache(mCache);
 		baseConfig.setLoaderListener(new SimpleDisplayer());
 	}
+	
 	/**
 	 * 获取当前使用的缓存的配置设置
 	 * @return
@@ -96,15 +107,17 @@ public final class CacheBitmapLoader {
 	public CacheConfig getCacheConfig(){
 		return baseConfig;
 	}
+	
 	/**
-	 * 获得网络请求的方式，分post和get
+	 * 获得网络请求的方式，目前分post和get,可以参见枚举{@link HttpMethod}
 	 * @return
 	 */
 	public HttpMethod getHttpMethod(){
 		return baseConfig.getHttpMethod();
 	}
+	
 	/**
-	 * 设置网络请求方式
+	 * 设置网络请求方式，目前合一设置post和get，可以参见枚举{@link HttpMethod}
 	 * @param netMethod
 	 * @return
 	 */
@@ -123,14 +136,13 @@ public final class CacheBitmapLoader {
 	}
 	
 	/**
-	 * 设置是否支持文件
+	 * 设置是否支持硬盘文件缓存
 	 * @param supportMemoryCache
 	 */
 	public CacheBitmapLoader setSupportDiskCache(boolean supportMemoryCache){
 		baseConfig.setSupportDiskCache(supportMemoryCache);
 		return this;
 	}
-	
 	
 	/**
 	 * 设置基类配置属性模型，该配置以最后修改为准，它将是最后修改的属性信息
@@ -140,6 +152,7 @@ public final class CacheBitmapLoader {
 		baseConfig.setSuffix(suffix);
 		return this;
 	}
+	
 	/**
 	 * 获取当前配置的基础属性文件的后缀名称
 	 * @return
@@ -166,6 +179,7 @@ public final class CacheBitmapLoader {
 		baseConfig.setCachePath(cachePath);
 		return this;
 	}
+	
 	/**
 	 * 设置默认图片，当正在加载图片的时候
 	 * @return
@@ -174,6 +188,7 @@ public final class CacheBitmapLoader {
 		baseConfig.setLoadingBitmap(bitmap);
 		return this;
 	}
+	
 	/**
 	 * 以ID形式设置加载默认图片
 	 * @param res
@@ -187,6 +202,7 @@ public final class CacheBitmapLoader {
 				baseConfig.getReqHeight()));
 		return this;
 	}
+	
 	/**
 	 * 设置加载失败之后的默认图片
 	 * @param res
@@ -196,6 +212,7 @@ public final class CacheBitmapLoader {
 		baseConfig.setLoadFailureBitmap(bitmap);
 		return this;
 	}
+	
 	/**
 	 * 设置加载失败之后的默认图片
 	 * @param res
@@ -459,36 +476,29 @@ public final class CacheBitmapLoader {
 		}
 	};
 	
+	private File getFile(CacheConfig cacheConfig){
+	    String key = CacheUtils.createKey(cacheConfig.getUrl());
+	    File file = new File(cacheConfig.getCachePath(), 
+                key+(TextUtils.isEmpty(cacheConfig.getSuffix())?"":cacheConfig.getSuffix()));
+	    return file;
+	}
+	
 	private Bitmap getBitmapFromFile(CacheConfig cacheConfig){
 	    Bitmap bitmap = null;
-        String key = CacheUtils.createKey(cacheConfig.getUrl());
-        File file = new File(cacheConfig.getCachePath(), 
-                key+(TextUtils.isEmpty(cacheConfig.getSuffix())?"":cacheConfig.getSuffix()));
-
+        File file = getFile(cacheConfig);
         if(file.exists()){
             bitmap = CacheUtils.getBitmapFromFile(file,cacheConfig);
-            if(!cacheConfig.isSupportDiskCache() || !CacheUtils.isMounted()){
-                file.delete();
-            }
-            if(bitmap == null){
-                file.delete();
-            }
         }
         
         if(null == bitmap && URLUtil.isFileUrl(cacheConfig.getUrl())){
             file = new File(cacheConfig.getUrl());
             if(file.exists()){
                 bitmap = CacheUtils.getBitmapFromFile(file,cacheConfig);
-                if(bitmap == null){
-                    file.delete();
-                }
             }
         }
         
-        if(!cacheConfig.isSupportDiskCache()){ //如果不支持硬盘缓存，那么就把文件删除
-            if(file.exists()){
-                file.delete();
-            }
+        if(null == bitmap || !cacheConfig.isSupportDiskCache()){ //如果不支持硬盘缓存，那么就把文件删除
+            file.delete();
         }
         
         return bitmap;
@@ -498,7 +508,7 @@ public final class CacheBitmapLoader {
 	    Bitmap bitmap = null;
         
         if(cacheConfig.getLoaderListener().onCacheLoaderLoading(cacheConfig)){
-            
+            bitmap = cacheConfig.getBitmap();
         }else{
             InputStream is = null;
             
@@ -521,22 +531,15 @@ public final class CacheBitmapLoader {
             }
             
             if(is != null){ //正常从网络中获取流
-                String key = CacheUtils.createKey(cacheConfig.getUrl());
                 KitFileUtils.createFile(cacheConfig.getCachePath());
-                File file = new File(cacheConfig.getCachePath(), 
-                        key+(TextUtils.isEmpty(cacheConfig.getSuffix())?"":cacheConfig.getSuffix()));
+                File file = getFile(cacheConfig);
                 //防止覆盖图片情况，这种情况解决图片重复覆盖导致失真问题
                 if(file.exists()){ //如果文件存在了那么就不覆盖文件
                     file.delete();
                 }
                 KitBitmapUtils.stream2File(is, file);
                 bitmap = CacheUtils.getBitmapFromFile(file, cacheConfig);
-                if(!cacheConfig.isSupportDiskCache()){ //如果不支持硬盘缓存，那么就把文件删除
-                    if(file.exists()){
-                        file.delete();
-                    }
-                }
-                if(null == bitmap){
+                if(null==bitmap || !cacheConfig.isSupportDiskCache()){ //如果不支持硬盘缓存，那么就把文件删除
                     file.delete();
                 }
             }
@@ -569,17 +572,17 @@ public final class CacheBitmapLoader {
             
             if(isRunChaos(mCacheConfig.getView(), mCacheConfig.getUrl())){
                 Bitmap bitmap = mCache.get(mCacheConfig.getUrl());
-                if(null == bitmap){ //从文件中获取
+                if(null == bitmap || bitmap.isRecycled()){ //从文件中获取
                     KitLog.err("try to get bitmap from disk....");
                     bitmap = getBitmapFromFile(mCacheConfig);
                 }
                 
-                if(null == bitmap){ //从网络中获取
+                if(null == bitmap || bitmap.isRecycled()){ //从网络中获取
                     KitLog.err("try to get bitmap from http....");
                     bitmap = getBitmapFromHttp(mCacheConfig);
                 }
                 
-                if(null !=bitmap && !mCache.snapshot().containsKey(mCacheConfig.getUrl())){
+                if(null !=bitmap && !mCache.snapshot().containsKey(mCacheConfig.getUrl()) && !bitmap.isRecycled()){
                     mCache.put(mCacheConfig.getMapKey(), bitmap);
                 }
                 if(!isRunChaos(mCacheConfig.getView(), mCacheConfig.getUrl())){
