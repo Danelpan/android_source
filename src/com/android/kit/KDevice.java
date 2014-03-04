@@ -39,7 +39,7 @@ public class KDevice {
     private KDevice() {
     }
     
-    public static KDevice getInstance(Context context){
+    public synchronized static KDevice getInstance(Context context){
         if( null == mDevice ){
             mDevice = new KDevice();
         }

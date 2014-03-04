@@ -369,7 +369,8 @@ public final class CacheBitmapLoader {
 			return;
 		}
 		prepareDisplayTaskFor(config.getView(), url);
-		if(mCache.snapshot().containsKey(url)){
+		Bitmap mBitmap = mCache.get(url);
+		if(mBitmap != null && !mBitmap.isRecycled()){
 			config.setBitmap(mCache.get(url));
 			config.getLoaderListener().onCacheLoaderFinish(config,true);
 		}else{
@@ -426,6 +427,7 @@ public final class CacheBitmapLoader {
 				}
 			}
 			mCache.snapshot().clear();
+			mCache = null;
 		}
 	}
 	/**
@@ -525,9 +527,9 @@ public final class CacheBitmapLoader {
                         key+(TextUtils.isEmpty(cacheConfig.getSuffix())?"":cacheConfig.getSuffix()));
                 //防止覆盖图片情况，这种情况解决图片重复覆盖导致失真问题
                 if(file.exists()){ //如果文件存在了那么就不覆盖文件
-                }else{
-                    KitBitmapUtils.stream2File(is, file);
+                    file.delete();
                 }
+                KitBitmapUtils.stream2File(is, file);
                 bitmap = CacheUtils.getBitmapFromFile(file, cacheConfig);
                 if(!cacheConfig.isSupportDiskCache()){ //如果不支持硬盘缓存，那么就把文件删除
                     if(file.exists()){
