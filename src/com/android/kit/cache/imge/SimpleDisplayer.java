@@ -56,16 +56,27 @@ public class SimpleDisplayer implements CacheLoaderListener {
         return duration;
     }
 
-    public void setDuration(long duration) {
+    public SimpleDisplayer setDuration(long duration) {
         this.duration = duration;
+        return this;
     }
 
     public int getRoundPixels() {
         return roundPixels;
     }
+    
+    public DisplayerType getDisplayerType(){
+        return type;
+    }
+    
+    public SimpleDisplayer setDisplayerType(DisplayerType displayerType){
+        this.type = displayerType;
+        return this;
+    }
 
-    public void setRoundPixels(int roundPixels) {
+    public SimpleDisplayer setRoundPixels(int roundPixels) {
         this.roundPixels = roundPixels;
+        return this;
     }
 
     @Override

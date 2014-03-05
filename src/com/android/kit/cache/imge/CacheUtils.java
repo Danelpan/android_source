@@ -131,9 +131,10 @@ public final class CacheUtils {
      * @param path
      * @return
      */
+    @SuppressWarnings("deprecation")
     public static final long getUsableSpace(File path) {
         StatFs stats = new StatFs(path.getPath());
-        return stats.getBlockSizeLong() * stats.getAvailableBlocksLong();
+        return stats.getBlockSize() * stats.getAvailableBlocks();
     }
 
     /**
