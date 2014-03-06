@@ -7,21 +7,21 @@ import android.provider.BaseColumns;
  *
  */
 public class CacheEntry implements BaseColumns{
-    private static final String TABLE_NAME = "cache";
+    protected static final String TABLE_NAME = "cache";
     
-    private static final String COLUMN_NAME_CACHE_ID = "content_id";
-    private static final String COLUMN_NAME_CACHE_TEXT = "content_text";
-    private static final String COLUMN_NAME_CACHE_BYTE = "content_byte";
-    private static final String COLUMN_NAME_CACHE_DATE = "content_date";
+    protected static final String COLUMN_NAME_CACHE_ID = "content_id";
+    protected static final String COLUMN_NAME_CACHE_TEXT = "content_text";
+    protected static final String COLUMN_NAME_CACHE_BYTE = "content_byte";
+    protected static final String COLUMN_NAME_CACHE_DATE = "content_date";
     
-    private static final String TEXT_TYPE = " TEXT";
-    private static final String BYTE_TYPE = " BLOB";
-    private static final String DATE_TYPE = " DATE";
+    protected static final String TEXT_TYPE = " TEXT";
+    protected static final String BYTE_TYPE = " BLOB";
+    protected static final String DATE_TYPE = " DATE";
     
-    private static final String COMMA_SEP = ",";
+    protected static final String COMMA_SEP = ",";
     
     protected static final String getSelectSql(){
-        return "SELECT * FROM " + TABLE_NAME +" WHERE " + COLUMN_NAME_CACHE_ID + "=?";
+        return "SELECT * FROM " + TABLE_NAME +" WHERE " + COLUMN_NAME_CACHE_ID + " LIKE ?";
     }
     
     protected static final String getInsertSql(){
@@ -29,11 +29,11 @@ public class CacheEntry implements BaseColumns{
     }
     
     protected static final String getDeleteItemSql(){
-        return "DELETE FROM " + TABLE_NAME + " WHERE "  + COLUMN_NAME_CACHE_ID + "=?";
+        return "DELETE FROM " + TABLE_NAME + " WHERE "  + COLUMN_NAME_CACHE_ID + " LIKE ?";
     }
     
     protected static final String getCreateTableSql(){
-        return "CREATE TABLE " + TABLE_NAME + " (" +
+        return "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " (" +
                 _ID + " INTEGER PRIMARY KEY" + COMMA_SEP +
                 COLUMN_NAME_CACHE_ID + TEXT_TYPE + COMMA_SEP +
                 COLUMN_NAME_CACHE_TEXT + TEXT_TYPE + COMMA_SEP +

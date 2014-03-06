@@ -3,6 +3,7 @@ package com.android.kit.cache.dao;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.text.TextUtils;
 
 /**
  * 缓存数据数据库操作工具类
@@ -25,11 +26,12 @@ public final class CacheSqlLiteUtils {
             return null;
         }
         mDatabase.beginTransaction();
+        mDatabase.execSQL(CacheEntry.getCreateTableSql());
         try{
             Cursor mCursor = mDatabase.rawQuery(CacheEntry.getSelectSql(), new String[]{key});
             mDatabase.setTransactionSuccessful();
             if(null != mCursor && mCursor.getCount() >0 && mCursor.moveToFirst()){
-                return mCursor.getString(2);
+                return mCursor.getString(mCursor.getColumnIndexOrThrow(CacheEntry.COLUMN_NAME_CACHE_TEXT));
             }
         }finally{
             mDatabase.endTransaction();
@@ -47,12 +49,19 @@ public final class CacheSqlLiteUtils {
      */
     public synchronized static final boolean putString(Context context,String key,String value){
         CacheSqlLite mCacheSqlLite = new CacheSqlLite(context);
-        SQLiteDatabase mDatabase = mCacheSqlLite.getReadableDatabase();
+        SQLiteDatabase mDatabase = mCacheSqlLite.getWritableDatabase();
         if(null == mDatabase){
             return false;
         }
         mDatabase.beginTransaction();
+        mDatabase.execSQL(CacheEntry.getCreateTableSql());
         try{
+            
+            String data = pullString(context, key);
+            if(TextUtils.isEmpty(data)){
+                deleteItem(context, key);
+            }
+            
             mDatabase.execSQL(CacheEntry.getInsertSql(), new String[]{null,key,value,null,System.currentTimeMillis()+""});
             mDatabase.setTransactionSuccessful();
             return true;
@@ -75,6 +84,7 @@ public final class CacheSqlLiteUtils {
             return false;
         }
         mDatabase.beginTransaction();
+        mDatabase.execSQL(CacheEntry.getCreateTableSql());
         try{
             mDatabase.execSQL(CacheEntry.getDeleteItemSql(), new String[]{key});
             mDatabase.setTransactionSuccessful();
@@ -120,11 +130,12 @@ public final class CacheSqlLiteUtils {
             return null;
         }
         mDatabase.beginTransaction();
+        mDatabase.execSQL(CacheEntry.getCreateTableSql());
         try{
             Cursor mCursor = mDatabase.rawQuery(CacheEntry.getSelectSql(), new String[]{key});
             mDatabase.setTransactionSuccessful();
             if(null != mCursor && mCursor.getCount() >0 && mCursor.moveToFirst()){
-                return mCursor.getBlob(3);
+                return mCursor.getBlob(mCursor.getColumnIndexOrThrow(CacheEntry.COLUMN_NAME_CACHE_BYTE));
             }
         }finally{
             mDatabase.endTransaction();
@@ -142,12 +153,19 @@ public final class CacheSqlLiteUtils {
      */
     public synchronized static final boolean putBlob(Context context,String key,byte[] value){
         CacheSqlLite mCacheSqlLite = new CacheSqlLite(context);
-        SQLiteDatabase mDatabase = mCacheSqlLite.getReadableDatabase();
+        SQLiteDatabase mDatabase = mCacheSqlLite.getWritableDatabase();
         if(null == mDatabase){
             return false;
         }
         mDatabase.beginTransaction();
+        mDatabase.execSQL(CacheEntry.getCreateTableSql());
         try{
+            
+            byte[] data = pullBlob(context, key);
+            if(null != data){ //删除重复键值
+                deleteItem(context, key);
+            }
+            
             mDatabase.execSQL(CacheEntry.getInsertSql(), new Object[]{null,key,null,value,System.currentTimeMillis()+""});
             mDatabase.setTransactionSuccessful();
             return true;
