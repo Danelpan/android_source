@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 
 import org.apache.http.client.ClientProtocolException;
 
@@ -302,8 +303,7 @@ public final class CacheBitmapLoader {
             KitLog.err("当前传入的url不是一个网络连接");
             return;
         }
-	    AsyBitmapTask task = new AsyBitmapTask(cacheConfig);
-        mExecutorService.submit(task);
+	    _doAsynTask(cacheConfig).run();
 	}
 	
 	/**
@@ -391,9 +391,14 @@ public final class CacheBitmapLoader {
 			config.setBitmap(mCache.get(url));
 			config.getLoaderListener().onCacheLoaderFinish(config,true);
 		}else{
-			AsyBitmapTask task = new AsyBitmapTask(config);
-			mExecutorService.submit(task);
+		    _doAsynTask(config);
 		}
+	}
+	
+	private FutureTask<?> _doAsynTask(CacheConfig cacheConfig){
+	    AsyBitmapTask task = new AsyBitmapTask(cacheConfig);
+        FutureTask<?> mFutureTask = (FutureTask<?>) mExecutorService.submit(task);
+        return mFutureTask;
 	}
 	
 	private CacheConfig copyBaseConfig(CacheConfig temp){
@@ -490,11 +495,10 @@ public final class CacheBitmapLoader {
             bitmap = CacheUtils.getBitmapFromFile(file,cacheConfig);
         }
         
-        if(null == bitmap && URLUtil.isFileUrl(cacheConfig.getUrl())){
-            file = new File(cacheConfig.getUrl());
-            if(file.exists()){
-                bitmap = CacheUtils.getBitmapFromFile(file,cacheConfig);
-            }
+        File mFile = new File(cacheConfig.getUrl());
+        if(null == bitmap && mFile.exists()){
+            bitmap = CacheUtils.getBitmapFromFile(mFile,cacheConfig);
+            return bitmap;
         }
         
         if(null == bitmap || !cacheConfig.isSupportDiskCache()){ //如果不支持硬盘缓存，那么就把文件删除

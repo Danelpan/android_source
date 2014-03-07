@@ -25,16 +25,19 @@ public final class CacheSqlLiteUtils {
         if(null == mDatabase){
             return null;
         }
-        mDatabase.beginTransaction();
-        mDatabase.execSQL(CacheEntry.getCreateTableSql());
+        Cursor mCursor = null;
         try{
-            Cursor mCursor = mDatabase.rawQuery(CacheEntry.getSelectSql(), new String[]{key});
-            mDatabase.setTransactionSuccessful();
+            mDatabase.execSQL(CacheEntry.getCreateTableSql());
+            
+            mCursor = mDatabase.rawQuery(CacheEntry.getSelectSql(), new String[]{key});
             if(null != mCursor && mCursor.getCount() >0 && mCursor.moveToFirst()){
-                return mCursor.getString(mCursor.getColumnIndexOrThrow(CacheEntry.COLUMN_NAME_CACHE_TEXT));
+                String value = mCursor.getString(mCursor.getColumnIndexOrThrow(CacheEntry.COLUMN_NAME_CACHE_TEXT));
+                return value;
             }
         }finally{
-            mDatabase.endTransaction();
+            if(null != mCursor){
+                mCursor.close();
+            }
             mDatabase.close();
         }
         return null;
@@ -53,9 +56,8 @@ public final class CacheSqlLiteUtils {
         if(null == mDatabase){
             return false;
         }
-        mDatabase.beginTransaction();
-        mDatabase.execSQL(CacheEntry.getCreateTableSql());
         try{
+            mDatabase.execSQL(CacheEntry.getCreateTableSql());
             
             String data = pullString(context, key);
             if(TextUtils.isEmpty(data)){
@@ -63,10 +65,8 @@ public final class CacheSqlLiteUtils {
             }
             
             mDatabase.execSQL(CacheEntry.getInsertSql(), new String[]{null,key,value,null,System.currentTimeMillis()+""});
-            mDatabase.setTransactionSuccessful();
             return true;
         }finally{
-            mDatabase.endTransaction();
             mDatabase.close();
         }
     }
@@ -106,13 +106,10 @@ public final class CacheSqlLiteUtils {
         if(null == mDatabase){
             return false;
         }
-        mDatabase.beginTransaction();
         try{
             mDatabase.execSQL(CacheEntry.getDropTableSql());
-            mDatabase.setTransactionSuccessful();
             return true;
         }finally{
-            mDatabase.endTransaction();
             mDatabase.close();
         }
     }
@@ -129,16 +126,18 @@ public final class CacheSqlLiteUtils {
         if(null == mDatabase){
             return null;
         }
-        mDatabase.beginTransaction();
-        mDatabase.execSQL(CacheEntry.getCreateTableSql());
+        Cursor mCursor = null;
         try{
-            Cursor mCursor = mDatabase.rawQuery(CacheEntry.getSelectSql(), new String[]{key});
-            mDatabase.setTransactionSuccessful();
+            mDatabase.execSQL(CacheEntry.getCreateTableSql());
+            
+            mCursor = mDatabase.rawQuery(CacheEntry.getSelectSql(), new String[]{key});
             if(null != mCursor && mCursor.getCount() >0 && mCursor.moveToFirst()){
                 return mCursor.getBlob(mCursor.getColumnIndexOrThrow(CacheEntry.COLUMN_NAME_CACHE_BYTE));
             }
         }finally{
-            mDatabase.endTransaction();
+            if(null != mCursor){
+                mCursor.close();
+            }
             mDatabase.close();
         }
         return null;
@@ -157,9 +156,8 @@ public final class CacheSqlLiteUtils {
         if(null == mDatabase){
             return false;
         }
-        mDatabase.beginTransaction();
-        mDatabase.execSQL(CacheEntry.getCreateTableSql());
         try{
+            mDatabase.execSQL(CacheEntry.getCreateTableSql());
             
             byte[] data = pullBlob(context, key);
             if(null != data){ //删除重复键值
@@ -167,10 +165,8 @@ public final class CacheSqlLiteUtils {
             }
             
             mDatabase.execSQL(CacheEntry.getInsertSql(), new Object[]{null,key,null,value,System.currentTimeMillis()+""});
-            mDatabase.setTransactionSuccessful();
             return true;
         }finally{
-            mDatabase.endTransaction();
             mDatabase.close();
         }
     }
