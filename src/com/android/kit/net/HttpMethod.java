@@ -6,5 +6,6 @@ package com.android.kit.net;
  */
 public enum HttpMethod {
     POST,
-    GET
+    GET,
+    PUT
 }
