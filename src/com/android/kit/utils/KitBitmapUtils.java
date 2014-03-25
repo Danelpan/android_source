@@ -1,18 +1,17 @@
 
 package com.android.kit.utils;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import com.android.kit.cache.imge.FlushedInputStream;
-
 import android.content.Context;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
 import android.graphics.BitmapFactory;
@@ -80,7 +79,7 @@ public final class KitBitmapUtils {
         canvas.drawBitmap(bmp2, 0, 0, paint_comm);
         return bmOverlay;
     }
-    
+
     /**
      * 获取bitmap的字节大小
      * 
@@ -106,6 +105,7 @@ public final class KitBitmapUtils {
 
     /**
      * 位图和流的转换
+     * 
      * @param bitmap
      * @param format
      * @param quality
@@ -117,7 +117,7 @@ public final class KitBitmapUtils {
         InputStream stream = new ByteArrayInputStream(baos.toByteArray());
         return stream;
     }
-    
+
     /**
      * 截获view图片
      * 
@@ -130,45 +130,214 @@ public final class KitBitmapUtils {
         Bitmap bitmap = view.getDrawingCache();
         return bitmap;
     }
-    
+
     /**
-     * 保存流到文件
-     * @param is
+     * 保存图片到文件,默认{@link CompressFormat}为JPEG，和quality is max
+     * 
+     * @param bitmap
      * @param file
      */
-    public static final synchronized void stream2File(InputStream is, File file) {
-        BufferedOutputStream out = null;
-        FlushedInputStream in = null;
+    public static final void bitmap2File(Bitmap bitmap, File file) {
+        bitmap2File(bitmap, file, CompressFormat.JPEG, 100);
+    }
+
+    /**
+     * 保存图片到文件
+     * 
+     * @param bitmap
+     * @param file
+     */
+    public static final void bitmap2File(Bitmap bitmap, File file, CompressFormat format,
+            int quality) {
+        if (bitmap == null) {
+            throw new NullPointerException("source bitmap is null...");
+        }
+        if (file == null) {
+            throw new NullPointerException("targe file is null...");
+        }
+        if (file.exists()) {
+            file.delete();
+        }
         FileOutputStream outputStream = null;
         try {
-            in = new FlushedInputStream(new BufferedInputStream(is, 8 * 1024));
             outputStream = new FileOutputStream(file);
-            out = new BufferedOutputStream(outputStream, 8 * 1024);
-            int b;
-            while ((b = in.read()) != -1) {
-                out.write(b);
-            }
-        } catch (Exception e) {
-            if (file != null && file.exists()) {
-                file.delete();
-            }
-            file = null;
+        } catch (FileNotFoundException e) {
+            KitLog.printStackTrace(e);
+        }
+        if (outputStream == null) {
+            return;
+        }
+        bitmap.compress(format, quality, outputStream);
+        try {
+            outputStream.flush();
+        } catch (IOException e) {
+            KitLog.printStackTrace(e);
         } finally {
             try {
-                if (out != null) {
-                    out.close();
-                }
-                if (null != outputStream) {
-                    outputStream.close();
-                }
-                if (in != null) {
-                    in.close();
-                }
-                if (null != is) {
-                    is.close();
-                }
-            } catch (final IOException e) {
+                outputStream.close();
+            } catch (IOException e) {
+                KitLog.printStackTrace(e);
             }
         }
+    }
+
+    /**
+     * 根据字节转换成位图
+     * 
+     * @param bs
+     * @param reqWidth
+     * @param reqHeight
+     * @return
+     */
+    public static final Bitmap decodeSampledBitmapFromBytes(byte[] bs, int reqWidth, int reqHeight) {
+        if (null == bs) {
+            return null;
+        }
+
+        BitmapFactory.Options decodeOptions = new BitmapFactory.Options();
+        Bitmap bitmap = null;
+
+        decodeOptions.inJustDecodeBounds = true;
+        BitmapFactory.decodeByteArray(bs, 0, bs.length, decodeOptions);
+        int actualWidth = decodeOptions.outWidth;
+        int actualHeight = decodeOptions.outHeight;
+
+        int desiredWidth = getResizedDimension(reqWidth, reqHeight,
+                actualWidth, actualHeight);
+        int desiredHeight = getResizedDimension(reqHeight, reqWidth,
+                actualHeight, actualWidth);
+
+        decodeOptions.inJustDecodeBounds = false;
+
+        decodeOptions.inSampleSize =
+                calculateInSampleSize(decodeOptions, desiredWidth, desiredHeight);
+        Bitmap tempBitmap =
+                BitmapFactory.decodeByteArray(bs, 0, bs.length, decodeOptions);
+
+        if (tempBitmap != null && (tempBitmap.getWidth() > desiredWidth ||
+                tempBitmap.getHeight() > desiredHeight)) {
+            bitmap = Bitmap.createScaledBitmap(tempBitmap,
+                    desiredWidth, desiredHeight, true);
+            tempBitmap.recycle();
+        } else {
+            bitmap = tempBitmap;
+        }
+        return bitmap;
+    }
+
+    /**
+     * 根据图片ID获取相应的位图信息
+     * 
+     * @param res
+     * @param resId
+     * @param reqWidth
+     * @param reqHeight
+     * @return
+     */
+    public static final Bitmap decodeSampledBitmapFromResource(Resources res,
+            int resId, int reqWidth, int reqHeight) {
+
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeResource(res, resId, options);
+
+        options.inSampleSize = calculateInSampleSize(options, reqWidth,
+                reqHeight);
+
+        options.inJustDecodeBounds = false;
+        return BitmapFactory.decodeResource(res, resId, options);
+    }
+
+    /**
+     * 根据文件解码位图
+     * 
+     * @param fileDescriptor
+     * @param reqWidth
+     * @param reqHeight
+     * @return
+     */
+    public static final Bitmap decodeSampledBitmapFromDescriptor(
+            FileDescriptor fileDescriptor, int reqWidth, int reqHeight) {
+
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeFileDescriptor(fileDescriptor, null, options);
+
+        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
+
+        options.inJustDecodeBounds = false;
+        return BitmapFactory.decodeFileDescriptor(fileDescriptor, null, options);
+    }
+
+    public static final Bitmap decodeSampledBitmapFromFile(String filename) {
+        return decodeSampledBitmapFromFile(filename, 0, 0);
+    }
+
+    public static final Bitmap decodeSampledBitmapFromFile(String filename,
+            int reqWidth, int reqHeight) {
+
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(filename, options);
+
+        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
+
+        options.inJustDecodeBounds = false;
+        return BitmapFactory.decodeFile(filename, options);
+    }
+
+    /**
+     * 根据宽高计算出一个合理的压缩比例
+     * 
+     * @param options
+     * @param reqWidth
+     * @param reqHeight
+     * @return
+     */
+    public static int calculateInSampleSize(BitmapFactory.Options options,
+            int reqWidth, int reqHeight) {
+        final int height = options.outHeight;
+        final int width = options.outWidth;
+        int inSampleSize = 1;
+
+        if (height > reqHeight || width > reqWidth) {
+            if (width > height) {
+                inSampleSize = Math.round((float) height / (float) reqHeight);
+            } else {
+                inSampleSize = Math.round((float) width / (float) reqWidth);
+            }
+
+            final float totalPixels = width * height;
+
+            final float totalReqPixelsCap = reqWidth * reqHeight * 2;
+
+            while (totalPixels / (inSampleSize * inSampleSize) > totalReqPixelsCap) {
+                inSampleSize++;
+            }
+        }
+        return inSampleSize;
+    }
+
+    static final int getResizedDimension(int maxPrimary, int maxSecondary, int actualPrimary,
+            int actualSecondary) {
+        if (maxPrimary == 0 && maxSecondary == 0) {
+            return actualPrimary;
+        }
+
+        if (maxPrimary == 0) {
+            double ratio = (double) maxSecondary / (double) actualSecondary;
+            return (int) (actualPrimary * ratio);
+        }
+
+        if (maxSecondary == 0) {
+            return maxPrimary;
+        }
+
+        double ratio = (double) actualSecondary / (double) actualPrimary;
+        int resized = maxPrimary;
+        if (resized * ratio > maxSecondary) {
+            resized = (int) (maxSecondary / ratio);
+        }
+        return resized;
     }
 }

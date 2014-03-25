@@ -1,12 +1,19 @@
 
 package com.android.kit.utils;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.StringTokenizer;
 
-import android.content.Context;
-import android.os.Environment;
+import com.android.kit.cache.imge.FlushedInputStream;
 
 /**
  * 文件工具
@@ -14,11 +21,6 @@ import android.os.Environment;
  * @author Danel
  */
 public final class KitFileUtils {
-    
-    private static final String INDIVIDUAL_DIR_NAME = "images";
-    private static final String CLASS_DIR_NAME = "class";
-    
-    public static String PROJECT_ROOT_DIR = "";
     
     private KitFileUtils() {
     }
@@ -28,7 +30,7 @@ public final class KitFileUtils {
      * 
      * @param path
      */
-    public static File createFile(String path) {
+    public static final File createFile(String path) {
         StringTokenizer st = new StringTokenizer(path, File.separator);
         String rootPath = st.nextToken() + File.separator;
         String tempPath = rootPath;
@@ -45,70 +47,116 @@ public final class KitFileUtils {
     }
     
     /**
-     * 获取缓存的目录，
-     * @param context
-     * @return
+     * 保存流到文件
+     * 
+     * @param is
+     * @param file
      */
-    public static File getCacheDirectory(Context context) {
-        File appCacheDir = null;
-        if (Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED)) {
-            appCacheDir = getExternalCacheDir(context);
-        }
-        if (appCacheDir == null) {
-            appCacheDir = context.getCacheDir();
-        }
-        return appCacheDir;
-    }
-
-
-    public static File getImageCacheDirectory(Context context) {
-        File cacheDir = getCacheDirectory(context);
-        File individualCacheDir = new File(cacheDir, INDIVIDUAL_DIR_NAME);
-        if (!individualCacheDir.exists()) {
-            if (!individualCacheDir.mkdir()) {
-                individualCacheDir = cacheDir;
+    public static final synchronized void stream2File(InputStream is, File file) {
+        BufferedOutputStream out = null;
+        FlushedInputStream in = null;
+        FileOutputStream outputStream = null;
+        try {
+            in = new FlushedInputStream(new BufferedInputStream(is, 8 * 1024));
+            outputStream = new FileOutputStream(file);
+            out = new BufferedOutputStream(outputStream, 8 * 1024);
+            int b;
+            while ((b = in.read()) != -1) {
+                out.write(b);
+            }
+        } catch (Exception e) {
+            if (file != null && file.exists()) {
+                file.delete();
+            }
+            file = null;
+        } finally {
+            try {
+                if (out != null) {
+                    out.close();
+                }
+                if (null != outputStream) {
+                    outputStream.close();
+                }
+                if (in != null) {
+                    in.close();
+                }
+                if (null != is) {
+                    is.close();
+                }
+            } catch (final IOException e) {
             }
         }
-        return individualCacheDir;
     }
     
-    public static File getClassCacheDirectory(Context context) {
-        File cacheDir = getCacheDirectory(context);
-        File individualCacheDir = new File(cacheDir, CLASS_DIR_NAME);
-        if (!individualCacheDir.exists()) {
-            if (!individualCacheDir.mkdir()) {
-                individualCacheDir = cacheDir;
-            }
-        }
-        return individualCacheDir;
-    }
 
-
-    public static File getOwnCacheDirectory(Context context, String cacheDir) {
-        File appCacheDir = null;
-        if (Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED)) {
-            appCacheDir = new File(Environment.getExternalStorageDirectory(), cacheDir);
+    /**
+     * 获取存储的class
+     * 
+     * @param name
+     * @return
+     */
+    public static final Object file2Object(File file) {
+        if (null == file) {
+            throw new NullPointerException("file is null ...");
         }
-        if (appCacheDir == null || (!appCacheDir.exists() && !appCacheDir.mkdirs())) {
-            appCacheDir = context.getCacheDir();
-        }
-        return appCacheDir;
-    }
-
-    private static File getExternalCacheDir(Context context) {
-        File dataDir = new File(new File(Environment.getExternalStorageDirectory(), "Android"), "data");
-        File appCacheDir = new File(new File(dataDir, context.getPackageName()), "cache");
-        if (!appCacheDir.exists()) {
-            if (!appCacheDir.mkdirs()) {
-                KitLog.out("Unable to create external cache directory");
-                return null;
-            }
+        FileInputStream fis = null;
+        ObjectInputStream ois = null;
+        if (file.exists()) {
             try {
-                new File(appCacheDir, ".nomedia").createNewFile();
+                fis = new FileInputStream(file);
+                ois = new ObjectInputStream(fis);
+                return ois.readObject();
+            } catch (FileNotFoundException e) {
+                KitLog.printStackTrace(e);
             } catch (IOException e) {
-                KitLog.out("Can't create \".nomedia\" file in application external cache directory");
+                KitLog.printStackTrace(e);
+            } catch (ClassNotFoundException e) {
+                KitLog.printStackTrace(e);
+            } finally {
+                try {
+                    ois.close();
+                    fis.close();
+                } catch (IOException e) {
+                }
             }
         }
-        return appCacheDir;
+        return null;
+    }
+
+    /**
+     * 保存类到存储,必须是实现了序列化之后的操作
+     * 
+     * @param name
+     * @param obj
+     */
+    public static final void object2File(Object obj,File file) {
+        if (null == obj) {
+            throw new NullPointerException("Object is null ...");
+        }
+        if (null == file) {
+            throw new NullPointerException("file is null ...");
+        }
+        FileOutputStream fos = null;
+        ObjectOutputStream oos = null;
+        if (file.exists()) {
+            file.delete();
+        }
+        try {
+            fos = new FileOutputStream(file);
+            oos = new ObjectOutputStream(fos);
+            oos.writeObject(obj);
+            oos.flush();
+            fos.flush();
+        } catch (FileNotFoundException e) {
+            KitLog.printStackTrace(e);
+        } catch (IOException e) {
+            KitLog.printStackTrace(e);
+        } finally {
+            try {
+                oos.close();
+                fos.close();
+            } catch (IOException e) {
+            }
+        }
     }
 }

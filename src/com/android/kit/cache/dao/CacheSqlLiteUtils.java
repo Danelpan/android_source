@@ -3,7 +3,11 @@ package com.android.kit.cache.dao;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.text.TextUtils;
+import android.graphics.Bitmap;
+
+import com.android.kit.utils.KitBitmapUtils;
+import com.android.kit.utils.KitLog;
+import com.android.kit.utils.KitStreamUtils;
 
 /**
  * 缓存数据数据库操作工具类
@@ -20,25 +24,13 @@ public final class CacheSqlLiteUtils {
      * @return
      */
     public synchronized static final String pullString(Context context,String key){
-        CacheSqlLite mCacheSqlLite = new CacheSqlLite(context);
-        SQLiteDatabase mDatabase = mCacheSqlLite.getReadableDatabase();
-        if(null == mDatabase){
-            return null;
-        }
-        Cursor mCursor = null;
-        try{
-            mDatabase.execSQL(CacheEntry.getCreateTableSql());
-            
-            mCursor = mDatabase.rawQuery(CacheEntry.getSelectSql(), new String[]{key});
-            if(null != mCursor && mCursor.getCount() >0 && mCursor.moveToFirst()){
-                String value = mCursor.getString(mCursor.getColumnIndexOrThrow(CacheEntry.COLUMN_NAME_CACHE_TEXT));
-                return value;
+        byte[] bs = pullBlob(context, key);
+        if(null != bs){
+            try {
+                return KitStreamUtils.inputStream2String(KitStreamUtils.byte2InputStream(bs));
+            } catch (Exception e) {
+                KitLog.printStackTrace(e);
             }
-        }finally{
-            if(null != mCursor){
-                mCursor.close();
-            }
-            mDatabase.close();
         }
         return null;
     }
@@ -51,24 +43,16 @@ public final class CacheSqlLiteUtils {
      * @return
      */
     public synchronized static final boolean putString(Context context,String key,String value){
-        CacheSqlLite mCacheSqlLite = new CacheSqlLite(context);
-        SQLiteDatabase mDatabase = mCacheSqlLite.getWritableDatabase();
-        if(null == mDatabase){
-            return false;
-        }
-        try{
-            mDatabase.execSQL(CacheEntry.getCreateTableSql());
-            
-            String data = pullString(context, key);
-            if(TextUtils.isEmpty(data)){
-                deleteItem(context, key);
+        try {
+            byte[] bs = value.getBytes("UTF-8");
+            if(null != bs){
+                putBlob(context, key, bs);
+                return true;
             }
-            
-            mDatabase.execSQL(CacheEntry.getInsertSql(), new String[]{null,key,value,null,System.currentTimeMillis()+""});
-            return true;
-        }finally{
-            mDatabase.close();
+        } catch (Exception e) {
+            KitLog.printStackTrace(e);
         }
+        return false;
     }
     
     /**
@@ -132,7 +116,7 @@ public final class CacheSqlLiteUtils {
             
             mCursor = mDatabase.rawQuery(CacheEntry.getSelectSql(), new String[]{key});
             if(null != mCursor && mCursor.getCount() >0 && mCursor.moveToFirst()){
-                return mCursor.getBlob(mCursor.getColumnIndexOrThrow(CacheEntry.COLUMN_NAME_CACHE_BYTE));
+                return mCursor.getBlob(mCursor.getColumnIndexOrThrow(CacheEntry.COLUMN_NAME_CACHE_VALUE));
             }
         }finally{
             if(null != mCursor){
@@ -164,10 +148,65 @@ public final class CacheSqlLiteUtils {
                 deleteItem(context, key);
             }
             
-            mDatabase.execSQL(CacheEntry.getInsertSql(), new Object[]{null,key,null,value,System.currentTimeMillis()+""});
+            mDatabase.execSQL(CacheEntry.getInsertSql(), new Object[]{null,key,value,System.currentTimeMillis()});
             return true;
         }finally{
             mDatabase.close();
         }
     }
+    
+    /**
+     * 根据key获取该条数据插入时间
+     * @param context
+     * @param key
+     * @return
+     */
+    public synchronized static final long pullInsertTime(Context context,String key){
+        CacheSqlLite mCacheSqlLite = new CacheSqlLite(context);
+        SQLiteDatabase mDatabase = mCacheSqlLite.getReadableDatabase();
+        if(null == mDatabase){
+            return 0;
+        }
+        Cursor mCursor = null;
+        try{
+            mDatabase.execSQL(CacheEntry.getCreateTableSql());
+            
+            mCursor = mDatabase.rawQuery(CacheEntry.getSelectSql(), new String[]{key});
+            if(null != mCursor && mCursor.getCount() >0 && mCursor.moveToFirst()){
+                return mCursor.getLong(mCursor.getColumnIndexOrThrow(CacheEntry.COLUMN_NAME_CACHE_TIME));
+            }
+        }finally{
+            if(null != mCursor){
+                mCursor.close();
+            }
+            mDatabase.close();
+        }
+        return 0;
+    }
+    
+    /**
+     * 从数据库中查出位图
+     * @param context
+     * @param key
+     * @return
+     */
+    public synchronized static final Bitmap pullBitmap(Context context,String key){
+        return pullBitmap(context,key,0,0);
+    }
+    
+    /**
+     * 从数据库中查出位图
+     * @param context
+     * @param key
+     * @param reqWidth
+     * @param reqHeight
+     * @return
+     */
+    public synchronized static final Bitmap pullBitmap(Context context,String key,int reqWidth,int reqHeight){
+        byte[] bs = pullBlob(context, key);
+        if(null != bs){
+            return KitBitmapUtils.decodeSampledBitmapFromBytes(bs, reqWidth, reqHeight);
+        }
+        return null;
+    } 
 }

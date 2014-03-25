@@ -25,7 +25,6 @@ import android.webkit.URLUtil;
 import com.android.kit.net.HttpMethod;
 import com.android.kit.net.KitHttpClient;
 import com.android.kit.utils.KitBitmapUtils;
-import com.android.kit.utils.KitCacheUtils;
 import com.android.kit.utils.KitFileUtils;
 import com.android.kit.utils.KitLog;
 import com.android.kit.utils.KitUtils;
@@ -197,7 +196,7 @@ public final class CacheBitmapLoader {
 	 */
 	public CacheBitmapLoader setLoadingBitmap(int res){
 	    setLoadingBitmap(
-				KitCacheUtils.decodeSampledBitmapFromResource(getContext().getResources(), 
+				KitBitmapUtils.decodeSampledBitmapFromResource(getContext().getResources(), 
 				res,
 				baseConfig.getReqWidth(), 
 				baseConfig.getReqHeight()));
@@ -221,7 +220,7 @@ public final class CacheBitmapLoader {
 	 */
 	public CacheBitmapLoader setLoadFailureBitmap(int res){
 	    setLoadFailureBitmap(
-	            KitCacheUtils.decodeSampledBitmapFromResource(getContext().getResources(),
+	            KitBitmapUtils.decodeSampledBitmapFromResource(getContext().getResources(),
 				res,
 				baseConfig.getReqWidth(),
 				baseConfig.getReqHeight()));
@@ -541,7 +540,7 @@ public final class CacheBitmapLoader {
                 if(file.exists()){ //如果文件存在了那么就不覆盖文件
                     file.delete();
                 }
-                KitBitmapUtils.stream2File(is, file);
+                KitFileUtils.stream2File(is, file);
                 bitmap = CacheUtils.getBitmapFromFile(file, cacheConfig);
                 if(null==bitmap || !cacheConfig.isSupportDiskCache()){ //如果不支持硬盘缓存，那么就把文件删除
                     file.delete();

@@ -18,7 +18,7 @@ import android.os.Environment;
 import android.os.StatFs;
 import android.text.TextUtils;
 
-import com.android.kit.utils.KitCacheUtils;
+import com.android.kit.utils.KitBitmapUtils;
 import com.android.kit.utils.KitFileUtils;
 import com.android.kit.utils.KitLog;
 
@@ -217,7 +217,7 @@ public final class CacheUtils {
                     fileDescriptor = inputStream.getFD();
                     if (fileDescriptor != null) {
                         file.setLastModified(System.currentTimeMillis());
-                        bitmap = KitCacheUtils.decodeSampledBitmapFromDescriptor(
+                        bitmap = KitBitmapUtils.decodeSampledBitmapFromDescriptor(
                                 fileDescriptor, config.getReqWidth(),
                                 config.getReqHeight());
                     }
