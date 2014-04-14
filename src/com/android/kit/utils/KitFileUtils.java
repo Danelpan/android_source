@@ -7,11 +7,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.StringTokenizer;
+
+import android.text.TextUtils;
 
 import com.android.kit.cache.imge.FlushedInputStream;
 
@@ -21,12 +25,16 @@ import com.android.kit.cache.imge.FlushedInputStream;
  * @author Danel
  */
 public final class KitFileUtils {
-    
+
     private KitFileUtils() {
     }
 
     /**
-     * 级连创建文件，通过一个分解字符串的形式循环创建目录
+     * 级连创建文件，通过一个分解字符串的形式循环创建目录，例如：<br>
+     * <br>
+     * /data/data/com.android.kit <br>
+     * <br>
+     * 这样的格式
      * 
      * @param path
      */
@@ -45,7 +53,74 @@ public final class KitFileUtils {
         }
         return boxFile;
     }
-    
+
+    /**
+     * 把字符串数据写到文件
+     * 
+     * @param data
+     * @param file
+     */
+    public static final synchronized void str2File(String data, File file, boolean append) {
+        if (TextUtils.isEmpty(data)) {
+            throw new NullPointerException("data of String is null");
+        }
+        FileWriter mWriter = null;
+        try {
+            mWriter = new FileWriter(file, append);
+            mWriter.write(data);
+            mWriter.flush();
+        } catch (IOException e) {
+            KitLog.printStackTrace(e);
+        } finally {
+            KitStreamUtils.closeStream(mWriter);
+        }
+
+    }
+
+    /**
+     * 覆盖写文件操作
+     * 
+     * @param data
+     * @param file
+     */
+    public static final synchronized void str2File(String data, File file) {
+        str2File(data, file, false);
+    }
+
+    public static final synchronized String file2Str(File file) {
+        if (null == file) {
+            throw new NullPointerException("File is null");
+        }
+        FileReader mReader = null;
+        try {
+            mReader = new FileReader(file);
+            char[] cTemp = new char[1024 * 4];
+            int i = -1;
+            StringBuilder strBuilder = new StringBuilder();
+            while ((i = mReader.read(cTemp)) != -1) {
+                strBuilder.append(cTemp, 0, i);
+            }
+            return strBuilder.toString();
+        } catch (FileNotFoundException e) {
+            KitLog.printStackTrace(e);
+        } catch (IOException e) {
+            KitLog.printStackTrace(e);
+        } finally {
+            KitStreamUtils.closeStream(mReader);
+        }
+        return null;
+    }
+
+    /**
+     * 字节写入文件
+     * 
+     * @param bs
+     * @param file
+     */
+    public static final synchronized void byte2File(byte[] bs, File file) {
+        stream2File(KitStreamUtils.byte2InputStream(bs), file);
+    }
+
     /**
      * 保存流到文件
      * 
@@ -70,24 +145,12 @@ public final class KitFileUtils {
             }
             file = null;
         } finally {
-            try {
-                if (out != null) {
-                    out.close();
-                }
-                if (null != outputStream) {
-                    outputStream.close();
-                }
-                if (in != null) {
-                    in.close();
-                }
-                if (null != is) {
-                    is.close();
-                }
-            } catch (final IOException e) {
-            }
+            KitStreamUtils.closeStream(out);
+            KitStreamUtils.closeStream(outputStream);
+            KitStreamUtils.closeStream(in);
+            KitStreamUtils.closeStream(is);
         }
     }
-    
 
     /**
      * 获取存储的class
@@ -113,11 +176,8 @@ public final class KitFileUtils {
             } catch (ClassNotFoundException e) {
                 KitLog.printStackTrace(e);
             } finally {
-                try {
-                    ois.close();
-                    fis.close();
-                } catch (IOException e) {
-                }
+                KitStreamUtils.closeStream(ois);
+                KitStreamUtils.closeStream(fis);
             }
         }
         return null;
@@ -129,7 +189,7 @@ public final class KitFileUtils {
      * @param name
      * @param obj
      */
-    public static final void object2File(Object obj,File file) {
+    public static final void object2File(Object obj, File file) {
         if (null == obj) {
             throw new NullPointerException("Object is null ...");
         }
@@ -152,11 +212,71 @@ public final class KitFileUtils {
         } catch (IOException e) {
             KitLog.printStackTrace(e);
         } finally {
-            try {
-                oos.close();
-                fos.close();
-            } catch (IOException e) {
-            }
+            KitStreamUtils.closeStream(oos);
+            KitStreamUtils.closeStream(fos);
         }
+    }
+
+    /**
+     * 文件复制
+     * 
+     * @param fileFrom
+     * @param fileTo
+     * @return
+     */
+    public static final boolean copyFile2File(File from, File to) {
+        FileInputStream in = null;
+        FileOutputStream out = null;
+        try {
+            in = new FileInputStream(from);
+            out = new FileOutputStream(to);
+            byte[] bt = new byte[1024 * 4];
+            int count;
+            while ((count = in.read(bt)) > 0) {
+                out.write(bt, 0, count);
+            }
+            out.flush();
+            return true;
+        } catch (IOException e) {
+            KitLog.printStackTrace(e);
+        } finally {
+            KitStreamUtils.closeStream(in);
+            KitStreamUtils.closeStream(out);
+        }
+        return false;
+    }
+
+    /**
+     * 清除该文件下的所有文件
+     * @param file
+     * @return
+     */
+    public static int clearFile(File file) {
+        int deletedFiles = 0;
+
+        if (null == file || !file.exists()) {
+            return deletedFiles;
+        }
+
+        try {
+            if (file.isDirectory()) {
+                for (File child : file.listFiles()) {
+                    if (child.isDirectory()) {
+                        deletedFiles += clearFile(child);
+                    }
+
+                    if (child.delete()) {
+                        deletedFiles++;
+                    }
+                }
+            } else {
+                if (file.delete()) {
+                    deletedFiles++;
+                }
+            }
+        } catch (Exception e) {
+            KitLog.printStackTrace(e);
+        }
+        return deletedFiles;
     }
 }

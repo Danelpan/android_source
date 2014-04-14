@@ -3,6 +3,7 @@ package com.android.kit.utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -44,7 +45,7 @@ public final class KitStreamUtils {
      * @throws IOException
      */
     public final static String inputStream2String(InputStream is) throws Exception {
-        return inputStream2String(is,"UTF-8");
+        return inputStream2String(is, "UTF-8");
     }
 
     /**
@@ -101,7 +102,7 @@ public final class KitStreamUtils {
             }
             return writer.toString();
         } finally {
-            reader.close();
+            closeStream(reader);
         }
     }
 
@@ -161,10 +162,7 @@ public final class KitStreamUtils {
             } catch (IOException e) {
             }
         } finally {
-            try {
-                is.close();
-            } catch (IOException e) {
-            }
+            closeStream(is);
         }
         return baos;
     }
@@ -174,11 +172,23 @@ public final class KitStreamUtils {
      * 
      * @param is
      * @return
-     * @throws FileNotFoundException 
+     * @throws FileNotFoundException
      */
     public final static FileOutputStream file2OutputStream(File file) throws FileNotFoundException {
         FileOutputStream fos = new FileOutputStream(file);
         return fos;
     }
-    
+
+    public static final boolean closeStream(Closeable is) {
+        if (is != null) {
+            try {
+                is.close();
+                return false;
+            } catch (IOException e) {
+                KitLog.printStackTrace(e);
+            }
+        }
+        return false;
+    }
+
 }

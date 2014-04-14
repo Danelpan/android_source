@@ -238,9 +238,7 @@ public class KitHttpClient {
         return bufHttpEntity.getContent();
     }
     public String postString(String url) throws ClientProtocolException, IOException{
-        InputStream is = postInputStream(url);
-        FlushedInputStream in = new FlushedInputStream(new BufferedInputStream(is, 8*1024));
-        return KitStreamUtils.readAsciiLine(in);
+        return postString(url,null);
     }
     
     public String postString(String url,RequestParams params) throws ClientProtocolException, IOException{

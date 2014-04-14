@@ -308,13 +308,13 @@ public final class KitBitmapUtils {
             }
 
             final float totalPixels = width * height;
-
             final float totalReqPixelsCap = reqWidth * reqHeight * 2;
 
             while (totalPixels / (inSampleSize * inSampleSize) > totalReqPixelsCap) {
                 inSampleSize++;
             }
         }
+        KitLog.err("inSampleSize---->"+inSampleSize);
         return inSampleSize;
     }
 
