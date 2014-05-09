@@ -4,7 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -58,6 +61,8 @@ public final class CacheBitmapLoader {
 	private volatile boolean isPause = false;
 	
 	private final SparseArray<String> cacheKeysForViews = new SparseArray<String>();
+	
+	private final Map<String, WeakReference<FutureTask<?>>> mFutureTasks = Collections.synchronizedMap(new HashMap<String, WeakReference<FutureTask<?>>>());
 	
 	public CacheBitmapLoader(Context context) {
 		this(context, CacheUtils.defaultMMSize(context));
@@ -385,9 +390,9 @@ public final class CacheBitmapLoader {
 			return;
 		}
 		prepareDisplayTaskFor(config.getView(), url);
-		Bitmap mBitmap = mCache.get(url);
+		Bitmap mBitmap = getBitmapFromMemory(config);
 		if(mBitmap != null && !mBitmap.isRecycled()){
-			config.setBitmap(mCache.get(url));
+			config.setBitmap(mBitmap);
 			config.getLoaderListener().onCacheLoaderFinish(config,true);
 		}else{
 		    _doAsynTask(config);
@@ -397,6 +402,7 @@ public final class CacheBitmapLoader {
 	private FutureTask<?> _doAsynTask(CacheConfig cacheConfig){
 	    AsyBitmapTask task = new AsyBitmapTask(cacheConfig);
         FutureTask<?> mFutureTask = (FutureTask<?>) mExecutorService.submit(task);
+        mFutureTasks.put(cacheConfig.getMapKey(), new WeakReference<FutureTask<?>>(mFutureTask));
         return mFutureTask;
 	}
 	
@@ -487,6 +493,10 @@ public final class CacheBitmapLoader {
 	    return file;
 	}
 	
+	private Bitmap getBitmapFromMemory(CacheConfig cacheConfig){
+	    return mCache.get(cacheConfig.getUrl());
+	}
+	
 	private Bitmap getBitmapFromFile(CacheConfig cacheConfig){
 	    Bitmap bitmap = null;
         File file = getFile(cacheConfig);
@@ -574,7 +584,7 @@ public final class CacheBitmapLoader {
             }
             
             if(isRunChaos(mCacheConfig.getView(), mCacheConfig.getUrl())){
-                Bitmap bitmap = mCache.get(mCacheConfig.getUrl());
+                Bitmap bitmap = getBitmapFromMemory(mCacheConfig);
                 if(null == bitmap || bitmap.isRecycled()){ //从文件中获取
                     KitLog.err("try to get bitmap from disk....");
                     bitmap = getBitmapFromFile(mCacheConfig);
@@ -591,7 +601,7 @@ public final class CacheBitmapLoader {
                 if(!isRunChaos(mCacheConfig.getView(), mCacheConfig.getUrl())){
                     return;
                 }
-                mCacheConfig.setBitmap(mCache.get(mCacheConfig.getMapKey()));
+                mCacheConfig.setBitmap(getBitmapFromMemory(mCacheConfig));
                 if(mCache.snapshot().containsKey(mCacheConfig.getUrl()) && !mCacheConfig.isSupportMemoryCache()){
                     mCache.remove(mCacheConfig.getUrl());
                 }

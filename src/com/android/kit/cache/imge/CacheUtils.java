@@ -216,10 +216,18 @@ public final class CacheUtils {
                 try {
                     fileDescriptor = inputStream.getFD();
                     if (fileDescriptor != null) {
+                        
+                        int degrees = KitBitmapUtils.getRotationAngle(file.getPath());
+                        
                         file.setLastModified(System.currentTimeMillis());
                         bitmap = KitBitmapUtils.decodeSampledBitmapFromDescriptor(
                                 fileDescriptor, config.getReqWidth(),
                                 config.getReqHeight());
+                        if(0 != degrees){
+                            KitLog.err("图片旋转角度:"+degrees);
+                            bitmap = KitBitmapUtils.getRotationBitmap(bitmap, degrees);
+                        }
+                        
                     }
                 } catch (IOException e) {
                     KitLog.e("Read io error", e.getMessage());

@@ -179,16 +179,20 @@ public final class KitStreamUtils {
         return fos;
     }
 
-    public static final boolean closeStream(Closeable is) {
-        if (is != null) {
-            try {
-                is.close();
-                return false;
-            } catch (IOException e) {
-                KitLog.printStackTrace(e);
+    /**
+     * 关闭一个可关闭的流
+     * @param closeables
+     */
+    public static final void closeStream(Closeable... closeables) {
+        for (Closeable closeable : closeables) {
+            if (closeable != null) {
+                try {
+                    closeable.close();
+                } catch (IOException e) {
+                    KitLog.printStackTrace(e);
+                }
             }
         }
-        return false;
     }
 
 }

@@ -67,6 +67,7 @@ public class BaseActivity extends FragmentActivity{
 		thread.start();
 	}
 	
+	
 	public SparseArray<FutureTask<?>> runAsyncTask(TaskListener task,int ...tags){
 		for(int i=0;i<tags.length;i++){
 			runAsyncTask(task,tags[i]);

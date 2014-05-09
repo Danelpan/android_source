@@ -68,4 +68,12 @@ public final class KSDK {
 	public static boolean isDebug() {
 		return debug;
 	}
+	
+	/**
+	 * 设置SDK是否为调试状态
+	 * @param isDebug
+	 */
+	public static final void setDebug(boolean isDebug){
+	    debug = isDebug;
+	}
 }

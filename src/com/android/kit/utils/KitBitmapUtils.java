@@ -20,6 +20,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.media.ExifInterface;
 import android.view.View;
 
 public final class KitBitmapUtils {
@@ -340,4 +341,59 @@ public final class KitBitmapUtils {
         }
         return resized;
     }
+    
+    /**
+     * 获取文件图片的旋转角度
+     * @param filepath
+     * @return
+     */
+    public final static int getRotationAngle(String filepath){
+        int degree = 0;
+        ExifInterface exifInterface = null;
+        try {
+            exifInterface = new ExifInterface(filepath);
+        } catch (IOException e) {
+            KitLog.printStackTrace(e);
+        }
+        if (exifInterface != null) {
+            int orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, -1);
+            if (orientation != -1) {
+                switch (orientation) {
+                case ExifInterface.ORIENTATION_ROTATE_90:
+                    degree = 90;
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_180:
+                    degree = 180;
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_270:
+                    degree = 270;
+                    break;
+                }
+            }
+        }
+        return degree;
+    }
+    
+    /**
+     * 根据角度旋转位图，同时生成一张旋转后的位图，原图片将被释放掉
+     * @param bitmapSource
+     * @param degrees
+     * @return
+     */
+    public final static Bitmap getRotationBitmap(Bitmap bitmapSource , int degrees){
+        if(null==bitmapSource || bitmapSource.isRecycled()){
+            return null;
+        }
+        
+        Matrix matrix = new Matrix();
+        matrix.postRotate(degrees);
+        Bitmap rotateBitmap = Bitmap.createBitmap(   
+                bitmapSource, 0, 0, bitmapSource.getWidth(), bitmapSource.getHeight(), matrix, true);   
+        if(rotateBitmap != null) {   
+            bitmapSource.recycle();   
+            bitmapSource = rotateBitmap;   
+        } 
+        return bitmapSource;
+    }
+    
 }
