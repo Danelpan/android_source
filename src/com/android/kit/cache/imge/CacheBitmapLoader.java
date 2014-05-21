@@ -19,6 +19,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v4.util.LruCache;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.SparseArray;
@@ -518,6 +519,11 @@ public final class CacheBitmapLoader {
 	}
 	
 	private Bitmap getBitmapFromHttp(CacheConfig cacheConfig){
+	    
+	    if(!URLUtil.isNetworkUrl(cacheConfig.getUrl())){
+	        return null;
+	    }
+	    
 	    Bitmap bitmap = null;
         
         if(cacheConfig.getLoaderListener().onCacheLoaderLoading(cacheConfig)){
