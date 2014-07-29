@@ -94,7 +94,7 @@ public class SimpleDisplayer implements CacheLoaderListener {
     @Override
     public void onCacheLoaderFinish(CacheConfig cacheConfig, boolean isSuccess) {
         View view = cacheConfig.getView();
-        if (null == view) {
+        if (null == view ) {
             return;
         }
 
@@ -153,7 +153,7 @@ public class SimpleDisplayer implements CacheLoaderListener {
 
     @SuppressWarnings("deprecation")
     private void setBitmap(View view, Bitmap bitmap) {
-        if (null != view && null != bitmap) {
+        if (null != view && null != bitmap && !bitmap.isRecycled()) {
             if ((view instanceof ImageView)) {
                 ((ImageView) view).setImageBitmap(bitmap);
             } else {

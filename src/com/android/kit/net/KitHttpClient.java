@@ -288,7 +288,9 @@ public class KitHttpClient {
             String paramString = params.getParamString();
             if (url.indexOf("?") == -1) {
                 url += "?" + paramString;
-            } else {
+            } else if(url.endsWith("?")){
+            	url += paramString;
+            }else {
                 url += "&" + paramString;
             }
         }

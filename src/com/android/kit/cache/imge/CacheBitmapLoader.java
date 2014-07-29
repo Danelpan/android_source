@@ -4,13 +4,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 
 import org.apache.http.client.ClientProtocolException;
@@ -71,13 +71,15 @@ public final class CacheBitmapLoader {
 	
 	public CacheBitmapLoader(Context context,int cacheSize){
 		wrContext = new WeakReference<Context>(context);
-		setThreadPoolsSize(KitUtils.getAvailableProcessors());
+		KitLog.e("Cache", "size--->" + cacheSize);
+		getExecutorService();
 		if(mCache == null){
 		    mCache = new LruCache<String, Bitmap>(cacheSize){
 		        @Override
 		        protected int sizeOf(String key, Bitmap bitmap) {
 		            return KitBitmapUtils.getBitmapSize(bitmap);
 		        }
+		        
 		    };
 		}
 		buildBaseConfig(context);
@@ -87,8 +89,8 @@ public final class CacheBitmapLoader {
 	 * 设置线程池大小
 	 * @param poolSize
 	 */
-	public void setThreadPoolsSize(int poolSize){
-	    mExecutorService = Executors.newFixedThreadPool(poolSize);
+	public void getExecutorService(){
+	    mExecutorService = KitUtils.getThreasPools();
 	}
 	
 	/**
@@ -102,7 +104,6 @@ public final class CacheBitmapLoader {
 		int defaultWidth = (int)Math.floor((displayMetrics.widthPixels*5)/6);
 		baseConfig.setReqHeight(defaultWidth);
 		baseConfig.setReqWidth(defaultWidth);
-		baseConfig.setMapCache(mCache);
 		baseConfig.setLoaderListener(new SimpleDisplayer());
 	}
 	
@@ -304,8 +305,9 @@ public final class CacheBitmapLoader {
 	
 	private void _getBitmapFromCache(CacheConfig cacheConfig){
 	    String url = cacheConfig.getUrl();
-	    if(TextUtils.isEmpty(url) || !URLUtil.isNetworkUrl(url)){
-            KitLog.err("当前传入的url不是一个网络连接");
+	    cacheConfig.setMapKey(url);
+	    if(TextUtils.isEmpty(url)){
+            KitLog.err("当前传入的url为空...");
             return;
         }
 	    _doAsynTask(cacheConfig).run();
@@ -320,7 +322,51 @@ public final class CacheBitmapLoader {
 		    mExecutorService.shutdown();
 		}
 	}
+	
+	public void cancelTasks(){
+		Collection<WeakReference<FutureTask<?>>> tasks = mFutureTasks.values();
+		for (WeakReference<FutureTask<?>> task : tasks) {
+			if(task != null && task.get() != null){
+				task.get().cancel(true);
+			}
+		}
+		mFutureTasks.clear();
+	}
+	
+	public void cancelTask(String key){
+		WeakReference<FutureTask<?>> task = mFutureTasks.remove(key);
+		if( null != task && task.get() != null){
+			task.get().cancel(true);
+		}
+	}
 
+	public Bitmap obtainBitmap(String url){
+		CacheConfig config = copyBaseConfig(baseConfig);
+		config.setUrl(url);
+		return _obtainBitmap(config);
+	}
+	
+	public Bitmap obtainBitmap(String url,int width,int height){
+		CacheConfig config = copyBaseConfig(baseConfig);
+		config.setUrl(url);
+		config.setReqWidth(width);
+		config.setReqHeight(height);
+		return _obtainBitmap(config);
+	}
+	
+	private Bitmap _obtainBitmap(CacheConfig config){
+		Bitmap bitmap = getBitmapFromMemory(config);
+		if (null == bitmap) {
+			bitmap = getBitmapFromFile(config);
+		}
+		
+		if(null == bitmap){
+			bitmap = getBitmapFromHttp(config);
+		}
+		
+		return bitmap;
+	}
+	
 	/**
 	 * 根据url从网络获取相应缓存数据，图片
 	 * @param url 缓存数据的url
@@ -418,10 +464,25 @@ public final class CacheBitmapLoader {
 		config.setSuffix(temp.getSuffix());
 		config.setSupportDiskCache(temp.isSupportDiskCache());
 		config.setSupportMemoryCache(temp.isSupportMemoryCache());
-		config.setMapCache(temp.getMapCache());
 		config.setHttpMethod(temp.getHttpMethod());
 		config.setLoaderListener(temp.getLoaderListener());
 		return config;
+	}
+	
+	public void evictAll(){
+		mCache.evictAll();
+	}
+	
+	public void destory(String key){
+		Bitmap bitmap = getBitmapFromMemory(key);
+		if(null != bitmap && !bitmap.isRecycled()){
+			bitmap.recycle();
+		}
+		mCache.remove(key);
+	}
+	
+	public void remove(String key){
+		mCache.remove(key);
 	}
 	
 	/**
@@ -429,6 +490,7 @@ public final class CacheBitmapLoader {
 	 */
 	public void destroy(){
 		clearCache();
+		cancelTasks();
 		shutdownPools();
 		cacheKeysForViews.clear();
 	}
@@ -455,7 +517,7 @@ public final class CacheBitmapLoader {
 				}
 			}
 			mCache.snapshot().clear();
-			mCache = null;
+			mCache.evictAll();
 		}
 	}
 	/**
@@ -478,12 +540,15 @@ public final class CacheBitmapLoader {
 			if(null == config){
 				return;
 			}
+			
 			if(isRunChaos(config.getView(), config.getUrl())){
 				cancelDisplayTaskFor(config.getView());
 				config.getLoaderListener().onCacheLoaderFinish(config,config.getBitmap()!=null);
 			}else{
+				destory(config.getMapKey());
 				KitLog.err("不会加载图片");
 			}
+			cancelTask(config.getMapKey());
 		}
 	};
 	
@@ -494,8 +559,16 @@ public final class CacheBitmapLoader {
 	    return file;
 	}
 	
-	private Bitmap getBitmapFromMemory(CacheConfig cacheConfig){
-	    return mCache.get(cacheConfig.getUrl());
+	public Bitmap getBitmapFromMemory(CacheConfig cacheConfig){
+	    return getBitmapFromMemory(cacheConfig.getUrl());
+	}
+	
+	public Bitmap getBitmapFromMemory(String key){
+		Bitmap bitmap = mCache.get(key);
+		if(null != bitmap && !bitmap.isRecycled()){
+			return bitmap;
+		}
+		return null;
 	}
 	
 	private Bitmap getBitmapFromFile(CacheConfig cacheConfig){
@@ -602,7 +675,11 @@ public final class CacheBitmapLoader {
                 }
                 
                 if(null !=bitmap && !mCache.snapshot().containsKey(mCacheConfig.getUrl()) && !bitmap.isRecycled()){
-                    mCache.put(mCacheConfig.getMapKey(), bitmap);
+                	try {
+                		mCache.put(mCacheConfig.getMapKey(), bitmap);
+					} catch (Exception e) {
+						KitLog.printStackTrace(e);
+					}
                 }
                 if(!isRunChaos(mCacheConfig.getView(), mCacheConfig.getUrl())){
                     return;
@@ -614,6 +691,10 @@ public final class CacheBitmapLoader {
                 Message message = new Message();
                 message.obj = mCacheConfig;
                 mhander.sendMessage(message);
+            }else{
+            	cancelTask(mCacheConfig.getMapKey());
+				destory(mCacheConfig.getMapKey());
+				KitLog.err("不会加载图片");
             }
         }
 	    

@@ -1,7 +1,6 @@
 package com.android.kit.cache.imge;
 
 import android.graphics.Bitmap;
-import android.support.v4.util.LruCache;
 import android.view.View;
 import android.view.animation.Animation;
 
@@ -45,6 +44,11 @@ public class CacheConfig {
 	 * 位图的高度
 	 */
 	private int reqHeight;
+	
+	/**
+	 * 图片旋转的角度
+	 */
+	private int imageRot;
 	/**
 	 * 显示位图时候的动画
 	 */
@@ -74,19 +78,10 @@ public class CacheConfig {
 	 */
 	private boolean isSupportMemoryCache = true;
 	
-	private LruCache<String, Bitmap> mapCache;
-	
 	private String mapKey;
 	
 	private CacheLoaderListener loaderListener;
 	
-	public LruCache<String, Bitmap> getMapCache() {
-		return mapCache;
-	}
-
-	public void setMapCache(LruCache<String, Bitmap> mapCache) {
-		this.mapCache = mapCache;
-	}
 
 	public String getMapKey() {
 		return mapKey;
@@ -215,5 +210,13 @@ public class CacheConfig {
     public void setLoaderListener(CacheLoaderListener loaderListener) {
         this.loaderListener = loaderListener;
     }
+
+	public int getImageRot() {
+		return imageRot;
+	}
+
+	public void setImageRot(int imageRot) {
+		this.imageRot = imageRot;
+	}
 
 }

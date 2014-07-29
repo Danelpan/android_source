@@ -21,6 +21,7 @@ import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.ExifInterface;
+import android.util.Base64;
 import android.view.View;
 
 public final class KitBitmapUtils {
@@ -37,7 +38,14 @@ public final class KitBitmapUtils {
      * @return
      */
     public static final Drawable resizeImage(Context ctx, int resId, int w, int h) {
-        Bitmap BitmapOrg = BitmapFactory.decodeResource(ctx.getResources(), resId);
+        
+        Bitmap resizedBitmap = resizeBitmap(ctx, resId, w, h);
+
+        return new BitmapDrawable(ctx.getResources(), resizedBitmap);
+    }
+    
+    public static final Bitmap resizeBitmap(Context ctx, int resId, int w, int h){
+    	Bitmap BitmapOrg = decodeSampledBitmapFromResource(ctx.getResources(), resId, w, h);
         int width = BitmapOrg.getWidth();
         int height = BitmapOrg.getHeight();
         int newWidth = w;
@@ -48,10 +56,8 @@ public final class KitBitmapUtils {
 
         Matrix matrix = new Matrix();
         matrix.postScale(scaleWidth, scaleHeight);
-        Bitmap resizedBitmap = Bitmap.createBitmap(BitmapOrg, 0, 0,
-                width, height, matrix, true);
-
-        return new BitmapDrawable(ctx.getResources(), resizedBitmap);
+        Bitmap resizedBitmap = Bitmap.createBitmap(BitmapOrg, 0, 0,width, height, matrix, true);
+        return resizedBitmap;
     }
 
     /**
@@ -141,7 +147,28 @@ public final class KitBitmapUtils {
     public static final void bitmap2File(Bitmap bitmap, File file) {
         bitmap2File(bitmap, file, CompressFormat.JPEG, 100);
     }
+    
+    public static final String base64(Bitmap bitmap){
+    	ByteArrayOutputStream out = null;
+        try {
+            out = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
+            out.flush();
+            out.close();
+            byte[] imgBytes = out.toByteArray();
+            return Base64.encodeToString(imgBytes, Base64.DEFAULT);
+        } catch (Exception e) {
+            KitLog.printStackTrace(e);
+        } finally {
+            KitStreamUtils.closeStream(out);
+        }
+        return "";
+    }
 
+    public static final String base64(File file){
+    	return base64(BitmapFactory.decodeFile(file.getPath()));
+    }
+    
     /**
      * 保存图片到文件
      * 
@@ -242,11 +269,14 @@ public final class KitBitmapUtils {
         options.inJustDecodeBounds = true;
         BitmapFactory.decodeResource(res, resId, options);
 
-        options.inSampleSize = calculateInSampleSize(options, reqWidth,
-                reqHeight);
+        options.inSampleSize = calculateInSampleSize(options, reqWidth,reqHeight);
 
         options.inJustDecodeBounds = false;
         return BitmapFactory.decodeResource(res, resId, options);
+    }
+    
+    public static final Bitmap decodeBitmapFromResource(Resources res,int resId){
+    	return BitmapFactory.decodeResource(res, resId);
     }
 
     /**
@@ -267,7 +297,15 @@ public final class KitBitmapUtils {
         options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
 
         options.inJustDecodeBounds = false;
-        return BitmapFactory.decodeFileDescriptor(fileDescriptor, null, options);
+        Bitmap bitmap;
+        try{
+        	bitmap = BitmapFactory.decodeFileDescriptor(fileDescriptor, null, options);
+        }catch(OutOfMemoryError error){
+        	options.inSampleSize = options.inSampleSize * 2;
+        	bitmap = BitmapFactory.decodeFileDescriptor(fileDescriptor, null, options);
+        }
+        
+        return bitmap;
     }
 
     public static final Bitmap decodeSampledBitmapFromFile(String filename) {
@@ -387,13 +425,11 @@ public final class KitBitmapUtils {
         
         Matrix matrix = new Matrix();
         matrix.postRotate(degrees);
-        Bitmap rotateBitmap = Bitmap.createBitmap(   
-                bitmapSource, 0, 0, bitmapSource.getWidth(), bitmapSource.getHeight(), matrix, true);   
+        Bitmap rotateBitmap = Bitmap.createBitmap(bitmapSource, 0, 0, bitmapSource.getWidth(), bitmapSource.getHeight(), matrix, true);   
         if(rotateBitmap != null) {   
             bitmapSource.recycle();   
-            bitmapSource = rotateBitmap;   
         } 
-        return bitmapSource;
+        return rotateBitmap;
     }
     
 }

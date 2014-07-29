@@ -192,7 +192,7 @@ public final class KitUtils {
 		if(size<=0){
 		    size = 1;
 		}
-		return size;
+		return size * 2;
 	}
 	
 	/**

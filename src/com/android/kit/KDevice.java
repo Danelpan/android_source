@@ -20,21 +20,21 @@ public class KDevice {
 
     private static KDevice mDevice;
     
-    public int height = 0;
+    public static int height = 0;
 
-    public int width = 0;
+    public static int width = 0;
 
-    public String deviceId = "";
+    public static String deviceId = "";
 
-    public String packageName = "";
+    public static String packageName = "";
 
-    public float density;
+    public static float density;
 
-    public int densityDip;
+    public static int densityDip;
 
-    public String projectVer;
+    public static String projectVer;
 
-    public int androidSDKVer;
+    public static int androidSDKVer;
     
     private KDevice() {
     }
@@ -42,17 +42,18 @@ public class KDevice {
     public synchronized static KDevice getInstance(Context context){
         if( null == mDevice ){
             mDevice = new KDevice();
+            init(context);
         }
         return mDevice;
     }
     
-    public void init(Context context){
-        this.packageName = context.getPackageName();
+    private static void init(Context context){
+        packageName = context.getPackageName();
 
         PackageInfo info = null;
         try {
-            info = context.getPackageManager().getPackageInfo(this.packageName, 0);
-            this.projectVer = info.versionName;
+            info = context.getPackageManager().getPackageInfo(packageName, 0);
+            projectVer = info.versionName;
         } catch (NameNotFoundException e) {
             KitLog.printStackTrace(e);
         }
@@ -60,15 +61,15 @@ public class KDevice {
         DisplayMetrics dm = new DisplayMetrics();
         WindowManager manager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         manager.getDefaultDisplay().getMetrics(dm);
-        this.width = dm.widthPixels;
-        this.height = dm.heightPixels;
-        this.density = dm.density;
-        this.densityDip = dm.densityDpi;
+        width = dm.widthPixels;
+        height = dm.heightPixels;
+        density = dm.density;
+        densityDip = dm.densityDpi;
 
         TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-        this.deviceId = tm.getDeviceId();
+        deviceId = tm.getDeviceId();
 
-        this.androidSDKVer = android.os.Build.VERSION.SDK_INT;
+        androidSDKVer = android.os.Build.VERSION.SDK_INT;
         
     }
 }

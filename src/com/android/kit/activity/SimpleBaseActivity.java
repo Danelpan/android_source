@@ -6,7 +6,7 @@ import android.os.Bundle;
  * @author Danel
  *
  */
-public class SimpleBaseActivity extends BaseActivity implements TaskListener {
+public class SimpleBaseActivity extends BaseActivity implements ITaskListener {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -16,25 +16,19 @@ public class SimpleBaseActivity extends BaseActivity implements TaskListener {
 	public void startLoader(int tag){
 		runAsyncTask(this, tag);
 	}
-	
-	@Override
-	public void onTaskStart(int mTaskTag) {
-		
-	}
 
 	@Override
-	public Object onTaskLoading(int mTaskTag) {
-		
+	public Bundle onTaskStart(int mTaskTag) {
 		return null;
 	}
 
 	@Override
-	public void onTaskSuccess(int mTaskTag, Object result) {
-		
+	public Object onTaskLoading(Bundle bundle, int mTaskTag) {
+		return null;
 	}
 
 	@Override
-	public void onTaskFailure(int mTaskTag, Object result) {
+	public void onTaskFinish(Bundle bundle, int mTaskTag, Object result) {
 		
 	}
 	

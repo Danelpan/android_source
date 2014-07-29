@@ -25,6 +25,15 @@ public class BaseFragment extends Fragment{
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		if (null == mFutureTasks) {
+			mFutureTasks = new SparseArray<FutureTask<?>>();
+		}
+		if (null == mExecutorService) {
+			mExecutorService = KitUtils.getThreasPools();
+		}
+		if (null == mSparseArray) {
+			mSparseArray = new SparseArray<WeakReference<AsyncTask>>();
+		}
 	}
 
 	@Override
@@ -72,118 +81,150 @@ public class BaseFragment extends Fragment{
 		super.onStop();
 	}
 	
-	public SparseArray<FutureTask<?>> runAsyncTask(TaskListener task,int ...tags){
-		for(int i=0;i<tags.length;i++){
-			runAsyncTask(task,tags[i]);
+	public SparseArray<FutureTask<?>> runAsyncTask(ITaskListener task,int... tags) {
+		for (int i = 0; i < tags.length; i++) {
+			runAsyncTask(task, tags[i]);
 		}
 		return mFutureTasks;
 	}
-	
+
 	/**
 	 * 在线程中加载，和处理耗时事物
+	 * 
 	 * @param task 异步工作线程回调
 	 * @param tag 标记线程tag
 	 */
-	public AsyncTask runAsyncTask(final TaskListener task,final int tag){
-		if(isDestroy){
-			KitLog.e("BaseActivity", "Activity have Destroy……");
+	public AsyncTask runAsyncTask(final ITaskListener task, final int tag) {
+		if (isDestroy) {
+			KitLog.e("fagment", "fagment has Destroy……");
 			return null;
 		}
-		if(null == mFutureTasks){
-			mFutureTasks = new SparseArray<FutureTask<?>>();
-		}
-		if(null == mExecutorService){
-			mExecutorService = KitUtils.getThreasPools();
-		}
-		if(null == mSparseArray){
-			mSparseArray = new SparseArray<WeakReference<AsyncTask>>();
-		}
-		if(null != mSparseArray.get(tag) || null != mFutureTasks.get(tag)){
-			if(null != mSparseArray.get(tag) && null != mSparseArray.get(tag).get()){
-				if(!mSparseArray.get(tag).get().isCancel){
-					mSparseArray.get(tag).get().setCancel(true);
-				}
-				mSparseArray.remove(tag);
-			}
-			if(null != mFutureTasks.get(tag)){
-				mFutureTasks.get(tag).cancel(true);
-				mFutureTasks.remove(tag);
-			}
-		}
-		task.onTaskStart(tag);
-		AsyncTask mAsyncTask = new AsyncTask(task, tag);
-		WeakReference<AsyncTask> weakThread = new WeakReference<AsyncTask>(mAsyncTask); 
-		if(!mExecutorService.isShutdown()){
+		
+		removeTask(tag);
+		Bundle bundle = task.onTaskStart(tag);
+		AsyncTask mAsyncTask = new AsyncTask(bundle, task, tag);
+		WeakReference<AsyncTask> weakThread = new WeakReference<AsyncTask>(mAsyncTask);
+		if (!mExecutorService.isShutdown()) {
 			FutureTask<?> futureTask = (FutureTask<?>) mExecutorService.submit(weakThread.get());
-			mFutureTasks.put(tag,futureTask);
+			mFutureTasks.put(tag, futureTask);
 			mSparseArray.put(tag, weakThread);
 		}
 		return weakThread.get();
 	}
+
 	/**
 	 * 销毁异步操作的线程，同时关闭线程池
 	 */
-	public void destroyAsync(){
-		if(null != mSparseArray && mSparseArray.size()>0){
+	public void destroyAsync() {
+		if (null != mSparseArray && mSparseArray.size() > 0) {
 			for (int i = 0; i < mSparseArray.size(); i++) {
 				int mTaskTag = mSparseArray.keyAt(i);
-				AsyncTask mAsyncTask = mSparseArray.get(mTaskTag).get();
-				if(null != mAsyncTask && !mAsyncTask.isCancel){
-					mAsyncTask.setCancel(true);
-				}
+				removeAsyncTask(mTaskTag);
 			}
 			mSparseArray.clear();
 		}
-		
-		if(null != mFutureTasks && mFutureTasks.size()>0){
-			
+		if (null != mFutureTasks && mFutureTasks.size() > 0) {
+
 			for (int i = 0; i < mFutureTasks.size(); i++) {
 				int mTaskTag = mFutureTasks.keyAt(i);
-				FutureTask<?> mFutureTask = mFutureTasks.get(mTaskTag);
-				if(null != mFutureTask && !mFutureTask.isCancelled()){
-					mFutureTask.cancel(true);
-				}
+				removeFutureTasks(mTaskTag);
 			}
 			mFutureTasks.clear();
 		}
-		
-		if(null != mExecutorService && !mExecutorService.isShutdown()){
+		if (null != mExecutorService && !mExecutorService.isShutdown()) {
 			mExecutorService.shutdown();
 		}
 		mExecutorService = null;
 	}
-	
-	public class AsyncTask extends Thread{
-		private TaskListener mAsyncTask;
-		private int tag ;
+
+	public class AsyncTask extends Thread {
+		private ITaskListener mAsyncTask;
+		private int tag;
 		private boolean isCancel = false;
-		public AsyncTask(TaskListener task, int tag){
+		private Bundle bundle;
+
+		public AsyncTask(Bundle bundle, ITaskListener task, int tag) {
 			this.mAsyncTask = task;
 			this.tag = tag;
+			this.bundle = bundle;
 		}
+
 		@Override
 		public void run() {
-			final Object result = mAsyncTask.onTaskLoading(tag);
-			if(isDestroy || getActivity() == null){ //如果当前界面已经销毁，那么取消回调
+			if (isDestroy) {
 				return;
 			}
-			if(!isCancel){
+
+			if (isCancel) {
+				removeTask(tag);
+				return;
+			}
+
+			final Object result = mAsyncTask.onTaskLoading(bundle, tag);
+			if (isDestroy) { // 如果当前界面已经销毁，那么取消回调
+				return;
+			}
+			if (!isCancel) {
 				getActivity().runOnUiThread(new Runnable() {
-					
+
 					@Override
 					public void run() {
-						mAsyncTask.onTaskSuccess(tag, result);
+						mAsyncTask.onTaskFinish(bundle, tag, result);
 					}
 				});
 			}
-			mFutureTasks.delete(tag);
-			mSparseArray.delete(tag);
+			removeTask(tag);
 		}
+
 		public boolean isCancel() {
 			return isCancel;
 		}
+
 		public void setCancel(boolean isCancel) {
 			this.isCancel = isCancel;
 		}
+	}
+	
+	public synchronized void removeTask(int tag){
+		removeAsyncTask(tag);
+		removeFutureTasks(tag);
+	}
+	
+	private void removeAsyncTask(int tag){
+		if (null == mSparseArray) {
+			return;
+		}
+		
+		WeakReference<AsyncTask> wrat = mSparseArray.get(tag);
+		if (null == wrat) {
+			return;
+		}
+		
+		AsyncTask asyncTask = wrat.get();
+		if (null == asyncTask) {
+			return;
+		}
+		
+		if (!asyncTask.isCancel) {
+			asyncTask.setCancel(true);
+		}
+		asyncTask.interrupt();
+		mSparseArray.remove(tag);
+	}
+	
+	private void removeFutureTasks (int tag) {
+		if (null == mFutureTasks) {
+			return;
+		}
+		
+		FutureTask<?> futureTask = mFutureTasks.get(tag);
+		if (null == futureTask) {
+			return;
+		}
+		
+		if(!futureTask.isCancelled()){
+			futureTask.cancel(true);
+		}
+		mFutureTasks.remove(tag);
 	}
 }

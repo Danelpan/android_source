@@ -73,14 +73,6 @@ public final class CacheUtils {
             
             if(!TextUtils.isEmpty(imageCachePath)){
                 cacheDir = imageCachePath;
-                if (!cacheDir.startsWith(getSDCard())) {
-                    
-                    if(!cacheDir.startsWith(File.separator)){
-                        cacheDir = File.separator + cacheDir;
-                    }
-                    
-                    cacheDir =  getSDCard() + cacheDir;
-                }
             }
             
         }
@@ -112,7 +104,7 @@ public final class CacheUtils {
      * @return
      */
     public static final int defaultMMSize(Context context) {
-        return Math.round(getMemoryClass(context) * 1024 * 1024 / 4);
+        return Math.round(getMemoryClass(context) * 1024 * 1024 / 10);
     }
 
     /**
@@ -220,11 +212,9 @@ public final class CacheUtils {
                         int degrees = KitBitmapUtils.getRotationAngle(file.getPath());
                         
                         file.setLastModified(System.currentTimeMillis());
-                        bitmap = KitBitmapUtils.decodeSampledBitmapFromDescriptor(
-                                fileDescriptor, config.getReqWidth(),
-                                config.getReqHeight());
+                        bitmap = KitBitmapUtils.decodeSampledBitmapFromDescriptor(fileDescriptor, config.getReqWidth(),config.getReqHeight());
                         if(0 != degrees){
-                            KitLog.err("图片旋转角度:"+degrees);
+                        	config.setImageRot(degrees);
                             bitmap = KitBitmapUtils.getRotationBitmap(bitmap, degrees);
                         }
                         
