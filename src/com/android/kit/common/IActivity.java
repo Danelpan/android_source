@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.kit.manager;
+package com.android.kit.common;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -30,14 +30,14 @@ import android.app.Activity;
  * 通过改工具，客户端使用者可以自行维护属于自己的Activity栈；</br>
  * 注意事项：建议使用者无无特殊情况，不建议使用,并且该类属于单例模式
  */
-public class ActivityTaskManager {
-	private static ActivityTaskManager ATM = null;
+public class IActivity {
+	private static IActivity ATM = null;
 	private static Map<String, Activity> activityList = null;
-	private ActivityTaskManager(){
+	private IActivity(){
 		activityList = Collections.synchronizedMap(new LinkedHashMap<String,Activity>());
 	}
 	/**
-	 * 实例化{@link ActivityTaskManager}；</br>
+	 * 实例化{@link IActivity}；</br>
 	 * 使用方法:
 	 * <pre>
 	 * ActivityTaskManager atm = ActivityTaskManager.getInstance();
@@ -46,9 +46,9 @@ public class ActivityTaskManager {
 	 * </pre>
 	 * @return
 	 */
-	public static synchronized ActivityTaskManager getInstance() {
+	public static synchronized IActivity getInstance() {
 		if (ATM == null) {
-			ATM = new ActivityTaskManager();
+			ATM = new IActivity();
 		}
 		return ATM;
 	}

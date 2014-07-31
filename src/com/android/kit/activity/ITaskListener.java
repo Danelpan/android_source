@@ -9,21 +9,21 @@ import android.os.Bundle;
  * @author Danel
  * 
  */
-public interface ITaskListener {
+public interface ITaskListener<T> {
 	/**
 	 * 任务开始的时候，该函数将会被回调，该函数的回调在UI线程中执行
 	 */
-	Bundle onTaskStart(int mTaskTag);
+	Bundle onTaskStart(int taskTag);
 
 	/**
 	 * 任务执行中，该函数将会被回调，该函数回调在线程中执行
 	 */
-	Object onTaskLoading(Bundle bundle, int mTaskTag);
+	T onTaskLoading(Bundle bundle, int taskTag);
 
 	/**
 	 * 任务结束后，该函数被毁掉，该函数的回调是在UI线程中执行的,具体的返回值result是 <br>
 	 * onTaskLoading的结果集
 	 */
-	void onTaskFinish(Bundle bundle, int mTaskTag, Object result);
+	void onTaskFinish(Bundle bundle, int taskTag, T data);
 
 }

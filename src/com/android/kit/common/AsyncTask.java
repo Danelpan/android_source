@@ -1,55 +1,45 @@
 package com.android.kit.common;
 
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
-
 import com.android.kit.activity.ITaskListener;
 
-public class AsyncTask extends Thread {
-	private ITaskListener mAsyncTaskListener;
-	private int mTag;
-	private boolean isCancel = false;
+import android.content.AsyncTaskLoader;
+import android.content.Context;
+import android.os.Bundle;
+
+public class AsyncTask<T> extends AsyncTaskLoader<T> {
+	public static final int TASK_TAG = 0X999;
+
+	private ITaskListener<T> listener;
+	private int mTaskTag = 0x0;
 	private Bundle mBundle;
 
-	public AsyncTask(ITaskListener listener, int tag) {
-		this.mAsyncTaskListener = listener;
-		this.mTag = tag;
-		mBundle = mAsyncTaskListener.onTaskStart(mTag);
+	public AsyncTask(Context context) {
+		this(context, TASK_TAG);
+	}
+
+	public AsyncTask(Context context, int tag) {
+		super(context);
+		this.mTaskTag = tag;
 	}
 
 	@Override
-	public void run() {
-		if (isCancel) {
-			return;
-		}
-		final Object result = mAsyncTaskListener.onTaskLoading(mBundle, mTag);
-
-		if (isCancel) {
-			return;
-		}
-
-		Message msg = new Message();
-		msg.obj = result;
-		mHandler.sendMessage(msg);
+	public T loadInBackground() {
+		return listener.onTaskLoading(mBundle, mTaskTag);
 	}
 
-	public boolean isCancel() {
-		return isCancel;
+	@Override
+	public void deliverResult(T data) {
+		super.deliverResult(data);
+		listener.onTaskFinish(mBundle, mTaskTag, data);
 	}
 
-	public void setCancel(boolean cancel) {
-		this.isCancel = cancel;
-		if (isCancel) {
-			interrupt();
-		}
+	@Override
+	public void onStartLoading() {
+		mBundle = listener.onTaskStart(mTaskTag);
+		super.onStartLoading();
 	}
 
-	private final Handler mHandler = new Handler() {
-		@Override
-		public void handleMessage(Message msg) {
-			Object result = msg.obj;
-			mAsyncTaskListener.onTaskFinish(mBundle, mTag, result);
-		}
-	};
+	public void setTaskListener(ITaskListener<T> listener) {
+		this.listener = listener;
+	}
 }
